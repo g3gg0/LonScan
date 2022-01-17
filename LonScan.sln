@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LonScan", "LonScan\LonScan.csproj", "{DD1B0597-84AA-43F6-91C3-4166EED15AF4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD1B0597-84AA-43F6-91C3-4166EED15AF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD1B0597-84AA-43F6-91C3-4166EED15AF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD1B0597-84AA-43F6-91C3-4166EED15AF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD1B0597-84AA-43F6-91C3-4166EED15AF4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9F224627-7E7C-436F-9973-E9FC7CFB0464}
+	EndGlobalSection
+EndGlobal
