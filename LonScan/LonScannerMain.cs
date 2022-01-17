@@ -3,6 +3,14 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows.Forms;
 
+/*
+   Icons:
+    https://www.flaticon.com/free-icon/target_3094446
+    https://pixabay.com/vectors/add-cross-green-maths-plus-symbol-159647/
+ 
+ */
+
+
 namespace LonScan
 {
     public partial class LonScannerMain : Form
