@@ -196,6 +196,10 @@ namespace LonScan
                 {
                     return LonNPduFormat.AuthPDU;
                 }
+                if (PDU is LonAPdu)
+                {
+                    return LonNPduFormat.APDU;
+                }
 
                 return LonNPduFormat.Invalid;
             }
@@ -209,7 +213,8 @@ namespace LonScan
             TPDU = 0,
             SPDU = 1,
             AuthPDU = 2,
-            Invalid = 3
+            APDU = 3,
+            Invalid
         }
 
         public enum LonNPduAddressFormat
@@ -355,6 +360,9 @@ namespace LonScan
                     break;
                 case LonNPduFormat.AuthPDU:
                     pdu.PDU = LonAuthPdu.FromData(data, pduOffset, pduLength);
+                    break;
+                case LonNPduFormat.APDU:
+                    pdu.PDU = LonAPdu.FromData(data, pduOffset, pduLength);
                     break;
             }
 
