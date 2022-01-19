@@ -25,7 +25,14 @@ namespace LonScan
             {
                 foreach (int addr in dev.Addresses)
                 {
-                    AddressGuesses.Add(addr, dev.Name);
+                    if(AddressGuesses.ContainsKey(addr))
+                    {
+                        AddressGuesses[addr] += ", " + dev.Name;
+                    }
+                    else
+                    {
+                        AddressGuesses.Add(addr, dev.Name);
+                    }
                 }
             }
             AddressGuesses.Add(127, "MES-WiFi");
