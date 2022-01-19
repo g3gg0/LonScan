@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 /*
@@ -55,16 +56,6 @@ namespace LonScan
         private void ExitToolsStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Close();
-        }
-
-        private void ToolBarToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            toolStrip.Visible = toolBarToolStripMenuItem.Checked;
-        }
-
-        private void StatusBarToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            statusStrip.Visible = statusBarToolStripMenuItem.Checked;
         }
 
         private void CascadeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -127,6 +118,113 @@ namespace LonScan
 
             form.MdiParent = this;
             form.Show();
+        }
+
+        private void updateSystemTimeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DateTime now = DateTime.Now;
+            byte[] time = new byte[7];
+
+            time[0] = (byte)(now.Year >> 8);
+            time[1] = (byte)(now.Year >> 0);
+            time[2] = (byte)(now.Month);
+            time[3] = (byte)(now.Day);
+            time[4] = (byte)(now.Hour);
+            time[5] = (byte)(now.Minute);
+            time[6] = (byte)(now.Second);
+
+            for (int group = 0; group < 3; group++)
+            {
+                LonPPdu pdu = new LonPPdu
+                {
+                    NPDU = new LonNPdu
+                    {
+                        AddressFormat = LonNPdu.LonNPduAddressFormat.Group,
+                        SourceSubnet = 1,
+                        SourceNode = 126,
+                        DestinationGroup = (uint)group,
+                        DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                        Domain = 0x54,
+                        PDU = new LonAPduNetworkVariable
+                        {
+                            Selector = 0x100,
+                            Data = time
+                        }
+                    }
+                };
+                /* 00 00 00 03 08 31 00    
+                 * 
+                            int year = GetSigned(data, offset + 0, 1);
+                            uint month = GetUnsigned(data, offset + 2, 1);
+                            uint day = GetUnsigned(data, offset + 3, 1);
+                            uint hour = GetUnsigned(data, offset + 4, 1);
+                            uint minute = GetUnsigned(data, offset + 5, 1);
+                            uint second = GetUnsigned(data, offset + 6, 1);
+                */
+
+                bool success = Network.SendMessage(pdu, (p) =>
+                {
+                });
+            }
+        }
+
+        private void TestFunc_Click(object sender, EventArgs e)
+        {
+            /*
+            for (int group = 0; group < 3; group++)
+            {
+                LonPPdu pdu = new LonPPdu
+                {
+                    NPDU = new LonNPdu
+                    {
+                        AddressFormat = LonNPdu.LonNPduAddressFormat.Group,
+                        SourceSubnet = 1,
+                        SourceNode = 126,
+                        DestinationGroup = (uint)group,
+                        DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                        Domain = 0x54,
+                        PDU = new LonAPduNetworkManagement
+                        {
+                            Code = (int)LonAPdu.LonAPduNMType.
+                            Data = time
+                        }
+                    }
+                };
+
+                bool success = Network.SendMessage(pdu, (p) =>
+                {
+                });
+            */
+        }
+
+        private void ladeXIFToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "XIF files (*.xif)|*.xif|All files (*.*)|*.*";
+            dlg.RestoreDirectory = true;
+            dlg.Multiselect = true;
+
+            if(dlg.ShowDialog() == DialogResult.OK)
+            {
+                foreach(string s in dlg.FileNames)
+                {
+                    try
+                    {
+                        XifFile xif = new XifFile(s);
+
+                        if(Config.DeviceConfigs.Any(c => c.Name == xif.DeviceName))
+                        {
+                            continue;
+                        }
+                        Config.AddDeviceConfig(xif.ToDeviceConfig());
+                    }
+                    catch
+                    {
+
+                    }
+                }
+                Config.Save();
+            }
         }
     }
 }

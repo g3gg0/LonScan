@@ -208,6 +208,13 @@ namespace LonScan
             }
         };
 
+        internal void AddDeviceConfig(LonDeviceConfig xif)
+        {
+            List<LonDeviceConfig> cfg = DeviceConfigs.ToList();
+            cfg.Add(xif);
+            DeviceConfigs = cfg.ToArray();
+        }
+
         public static Config Load()
         {
             try

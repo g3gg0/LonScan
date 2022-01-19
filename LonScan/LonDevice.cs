@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Threading;
 
 namespace LonScan
@@ -43,11 +44,13 @@ namespace LonScan
                 {
                     foreach (var info in Config.NvMap)
                     {
+                        int nvIndex = info.Key;
+
                         if (ThreadStop)
                         {
                             return;
                         }
-
+                        
                         LonPPdu pdu = new LonPPdu
                         {
                             NPDU = new LonNPdu
@@ -62,7 +65,11 @@ namespace LonScan
                                 PDU = new LonSPdu
                                 {
                                     SPDUType = LonSPdu.LonSPduType.Request,
-                                    APDU = LonAPdu.GenerateNMNVFetch((byte)info.Key)
+                                    APDU = new LonAPduNetworkManagement
+                                    {
+                                        Code = (int)LonAPdu.LonAPduNMType.NetworkVariableValueFetch,
+                                        Data = new byte[] { (byte)info.Key }
+                                    }
                                 }
                             }
                         };
@@ -71,7 +78,67 @@ namespace LonScan
                         {
                             MessageReceived(p);
                         });
+                        /*
+                        LonPPdu pduTbl = new LonPPdu
+                        {
+                            NPDU = new LonNPdu
+                            {
+                                AddressFormat = LonNPdu.LonNPduAddressFormat.SubnetNode,
+                                SourceSubnet = 1,
+                                SourceNode = 126,
+                                DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                                Domain = 0x54,
+                                DestinationSubnet = 1,
+                                DestinationNode = (uint)Address,
+                                PDU = new LonSPdu
+                                {
+                                    SPDUType = LonSPdu.LonSPduType.Request,
+                                    APDU = new LonAPduNetworkManagement
+                                    {
+                                        Code = (int)LonAPdu.LonAPduNMType.QueryNetworkVariableConfig,
+                                        Data = new byte[] { (byte)nvIndex }
+                                    }
+                                }
+                            }
+                        };
+                        LonPPdu pduType = new LonPPdu
+                        {
+                            NPDU = new LonNPdu
+                            {
+                                AddressFormat = LonNPdu.LonNPduAddressFormat.SubnetNode,
+                                SourceSubnet = 1,
+                                SourceNode = 126,
+                                DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                                Domain = 0x54,
+                                DestinationSubnet = 1,
+                                DestinationNode = (uint)Address,
+                                PDU = new LonSPdu
+                                {
+                                    SPDUType = LonSPdu.LonSPduType.Request,
+                                    APDU = new LonAPduNetworkManagement
+                                    {
+                                        Code = (int)LonAPdu.LonAPduNMType.QueryStandardNetworkVariableType,
+                                        Data = new byte[] { (byte)nvIndex, 0, 16 }
+                                    }
+                                }
+                            }
+                        };
 
+                        string cfgString = "";
+                        string typeString = "";
+
+                        Network.SendMessage(pduTbl, (p) =>
+                        {
+                            var cfg = LonAPdu.NVConfig.FromData((p.NPDU.PDU as LonSPdu).APDU.Data, 0);
+                            cfgString = cfg.ToString();
+                        });
+                        Network.SendMessage(pduType, (p) =>
+                        {
+                            typeString = BitConverter.ToString((p.NPDU.PDU as LonSPdu).APDU.Data);
+                        });
+
+                        Console.WriteLine(nvIndex.ToString().PadLeft(2) + "# " + Config.NvMap[nvIndex].Name.PadRight(16) + " | " + cfgString + " " + typeString);
+                        */
                         Thread.Sleep(50);
                     }
                 }

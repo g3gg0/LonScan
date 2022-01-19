@@ -77,7 +77,7 @@ namespace LonScan
                             PDU = new LonSPdu
                             {
                                 SPDUType = LonSPdu.LonSPduType.Request,
-                                APDU = LonAPdu.GenerateNMMemoryRead(0, (uint)MemoryAddress, 16)
+                                APDU = LonAPduNetworkManagement.GenerateNMMemoryRead(0, (uint)MemoryAddress, 16)
                             }
                         }
                     };

@@ -159,7 +159,7 @@ namespace LonScan
 
                 case "SNVT_time_stamp":
                     {
-                        int year = GetSigned(data, offset + 0, 1);
+                        int year = GetSigned(data, offset + 0, 2);
                         uint month = GetUnsigned(data, offset + 2, 1);
                         uint day = GetUnsigned(data, offset + 3, 1);
                         uint hour = GetUnsigned(data, offset + 4, 1);

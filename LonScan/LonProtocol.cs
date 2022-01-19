@@ -572,35 +572,6 @@ namespace LonScan
     {
         public byte[] Data = new byte[0];
 
-        /// <summary>
-        /// Generate an APDU for reading a NV from the device
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public static LonAPdu GenerateNMNVFetch(int id)
-        {
-            return new LonAPduNetworkManagement
-            {
-                Code = (int)LonAPduNMType.NetworkVariableValueFetch,
-                Data = new byte[] { (byte)id }
-            };
-        }
-
-        /// <summary>
-        /// Generate an APDU for reading memory
-        /// </summary>
-        /// <param name="type">0: ram, 1: eeprom ro, 2: eeprom cfg</param>
-        /// <param name="address">0x0000 - 0xFFFF</param>
-        /// <param name="length">1-16 bytes</param>
-        /// <returns></returns>
-        public static LonAPdu GenerateNMMemoryRead(int type, uint address, int length)
-        {
-            return new LonAPduNetworkManagement
-            {
-                Code = (int)LonAPduNMType.ReadMemory,
-                Data = new byte[] { (byte)type, (byte)(address >> 8), (byte)(address & 0xFF), (byte)length }
-            };
-        }
     
 
         public override byte[] SDU => new byte[0];
@@ -660,6 +631,42 @@ namespace LonScan
 
             return pdu;
         }
+
+        public class NVConfig
+        {
+            public uint Priority;
+            public LonAPduDirection Direction;
+            public uint NetVarSelector;
+            public bool Unbound;
+
+            public uint Turnaround;
+            public uint Service;
+            public uint Authenticated;
+            public uint Address;
+
+            public static NVConfig FromData(byte[] data, int offset = 0)
+            {
+                NVConfig config = new NVConfig();
+
+                ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(14), new BitInfo(1), new BitInfo(2), new BitInfo(1), new BitInfo(4));
+
+                (config.Priority, config.Direction, config.NetVarSelector, config.Turnaround, config.Service, config.Authenticated, config.Address) = ((uint)values[0], (LonAPduDirection)values[1], (uint)values[2], (uint)values[3], (uint)values[4], (uint)values[5], (uint)values[6]);
+
+                config.Unbound = config.NetVarSelector > 0x1FFF;
+                if(config.Unbound)
+                {
+                    config.NetVarSelector = 0x3FFF-config.NetVarSelector;
+                }
+
+                return config;
+            }
+
+            public override string ToString()
+            {
+                return "Prio: " + Priority + ", Dir: " + Direction + " Selector: " + NetVarSelector.ToString().PadLeft(4) + " (" + (Unbound?"UnBound":"Bound  ") + ") Turn: " + Turnaround + " Service: " + Service + " Auth: " + Authenticated + " AddrTbl: " + Address;
+            }
+        }
+
 
         public enum LonAPduDirection
         {
@@ -732,6 +739,23 @@ namespace LonScan
         public uint Code = 0;
 
         public override byte[] SDU => CombineBits(new BitInfo(3, 3), new BitInfo(Code, 5));
+
+
+        /// <summary>
+        /// Generate an APDU for reading memory
+        /// </summary>
+        /// <param name="type">0: ram, 1: eeprom ro, 2: eeprom cfg</param>
+        /// <param name="address">0x0000 - 0xFFFF</param>
+        /// <param name="length">1-16 bytes</param>
+        /// <returns></returns>
+        public static LonAPdu GenerateNMMemoryRead(int type, uint address, int length)
+        {
+            return new LonAPduNetworkManagement
+            {
+                Code = (int)LonAPduNMType.ReadMemory,
+                Data = new byte[] { (byte)type, (byte)(address >> 8), (byte)(address & 0xFF), (byte)length }
+            };
+        }
     }
 
     public class LonAPduNetworkDiagnostic : LonAPdu
