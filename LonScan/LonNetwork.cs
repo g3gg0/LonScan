@@ -15,20 +15,22 @@ namespace LonScan
         private int NextTransaction = 0;
         private Dictionary<int, ResponseCallback> PendingRequests = new Dictionary<int, ResponseCallback>();
         private readonly string RemoteAddress;
+        private Config Config;
         private readonly IPAddress Remote;
         private readonly IPEndPoint RemoteEndpoint;
         private readonly Socket SendSocket;
         private readonly UdpClient ReceiveClient;
         private bool Stopped;
         internal Action<LonPPdu> OnReceive;
+        internal int SourceNode => Config.SourceNode;
 
-        public LonNetwork(string remoteAddress, int remoteReceivePort = 3333, int remoteSendPort = 3334)
+        public LonNetwork(Config config)
         {
-            RemoteAddress = remoteAddress;
-            Remote = IPAddress.Parse(RemoteAddress);
-            RemoteEndpoint = new IPEndPoint(Remote, remoteSendPort);
+            Config = config;
+            Remote = IPAddress.Parse(config.RemoteAddress);
+            RemoteEndpoint = new IPEndPoint(Remote, config.RemoteSendPort);
             SendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            ReceiveClient = new UdpClient(remoteReceivePort);
+            ReceiveClient = new UdpClient(config.RemoteReceivePort);
 
             OnReceive += (p) => { };
         }
@@ -67,13 +69,26 @@ namespace LonScan
                 NextTransaction++;
                 NextTransaction %= 8;
 
-                PendingRequests.Add(trans, response);
+                if (waitTime > 0)
+                {
+                    PendingRequests.Add(trans, response);
+                }
             }
 
             /* replace transaction ID */
-            if (pdu.NPDU.PDU is LonSPdu spdu)
+            if (pdu.NPDU.PDU is LonTransPdu lonpdu)
             {
-                spdu.TransNo = (uint)trans;
+                lonpdu.TransNo = (uint)trans;
+            }
+
+            /* update source subnet/address if needed */
+            if (pdu.NPDU.Address.SourceSubnet == -1)
+            {
+                pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
+            }
+            if (pdu.NPDU.Address.SourceNode == -1)
+            {
+                pdu.NPDU.Address.SourceNode = Config.SourceNode;
             }
 
             SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
@@ -147,7 +162,18 @@ namespace LonScan
 
         private void PacketReceived(LonPPdu pdu)
         {
+            Console.WriteLine(PacketForge.ToString(pdu));
+
             OnReceive(pdu);
+
+            if (!pdu.NPDU.Address.ForNode(Config.SourceNode))
+            {
+                return;
+            }
+            if (!pdu.NPDU.Address.ForSubnet(Config.SourceSubnet))
+            {
+                return;
+            }
 
             if (!(pdu.NPDU.PDU is LonSPdu spdu))
             {

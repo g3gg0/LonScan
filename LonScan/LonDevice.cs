@@ -55,19 +55,21 @@ namespace LonScan
                         {
                             NPDU = new LonNPdu
                             {
-                                AddressFormat = LonNPdu.LonNPduAddressFormat.SubnetNode,
-                                SourceSubnet = 1,
-                                SourceNode = 126,
+                                Address = new LonAddressNode
+                                {
+                                    SourceSubnet = -1,
+                                    SourceNode = -1, /* automatically set */
+                                    DestinationSubnet = 1,
+                                    DestinationNode = (uint)Address
+                                },
                                 DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
                                 Domain = 0x54,
-                                DestinationSubnet = 1,
-                                DestinationNode = (uint)Address,
                                 PDU = new LonSPdu
                                 {
                                     SPDUType = LonSPdu.LonSPduType.Request,
                                     APDU = new LonAPduNetworkManagement
                                     {
-                                        Code = (int)LonAPdu.LonAPduNMType.NetworkVariableValueFetch,
+                                        Code = LonAPdu.LonAPduNMType.NetworkVariableValueFetch,
                                         Data = new byte[] { (byte)info.Key }
                                     }
                                 }
@@ -157,7 +159,7 @@ namespace LonScan
 
         void MessageReceived(LonPPdu pdu)
         {
-            if (pdu.NPDU.SourceNode != Address)
+            if (pdu.NPDU.Address.ForNode(Address))
             {
                 return;
             }

@@ -15,6 +15,8 @@ namespace LonScan
         public string RemoteAddress = "192.168.1.255";
         public int RemoteReceivePort = 3333;
         public int RemoteSendPort = 3334;
+        public int SourceSubnet = 1;
+        public int SourceNode = 126;
 
         public LonDeviceConfig[] DeviceConfigs = new LonDeviceConfig[]
         {
@@ -207,6 +209,9 @@ namespace LonScan
                 }
             }
         };
+
+        public List<string> PacketForgeTemplates = new List<string>() ;
+        public int PacketForgeTimeout = 500;
 
         internal void AddDeviceConfig(LonDeviceConfig xif)
         {

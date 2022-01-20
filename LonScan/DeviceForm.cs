@@ -67,13 +67,16 @@ namespace LonScan
                     {
                         NPDU = new LonNPdu
                         {
-                            AddressFormat = LonNPdu.LonNPduAddressFormat.SubnetNode,
-                            SourceSubnet = 1,
-                            SourceNode = 126,
+                            Address = new LonAddressNode
+                            {
+                                SourceSubnet = 1,
+                                SourceNode = 126,
+                                DestinationSubnet = 1,
+                                DestinationNode = (uint)Address
+                            },
+
                             DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
                             Domain = 0x54,
-                            DestinationSubnet = 1,
-                            DestinationNode = (uint)Address,
                             PDU = new LonSPdu
                             {
                                 SPDUType = LonSPdu.LonSPduType.Request,

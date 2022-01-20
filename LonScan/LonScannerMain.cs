@@ -25,7 +25,7 @@ namespace LonScan
 
             LoadConfig();
 
-            Network = new LonNetwork(Config.RemoteAddress, Config.RemoteReceivePort, Config.RemoteSendPort);
+            Network = new LonNetwork(Config);
             Network.Start();
         }
 
@@ -107,16 +107,13 @@ namespace LonScan
 
         internal void AddDevice(LonDevice dev)
         {
-            DeviceForm form = new DeviceForm(dev);
-            form.MdiParent = this;
+            DeviceForm form = new DeviceForm(dev) {  MdiParent = this };
             form.Show();
         }
 
         private void btnScan_Click(object sender, EventArgs e)
         {
-            ScanForm form = new ScanForm(Network, Config);
-
-            form.MdiParent = this;
+            ScanForm form = new ScanForm(Network, Config) { MdiParent = this };
             form.Show();
         }
 
@@ -139,10 +136,12 @@ namespace LonScan
                 {
                     NPDU = new LonNPdu
                     {
-                        AddressFormat = LonNPdu.LonNPduAddressFormat.Group,
-                        SourceSubnet = 1,
-                        SourceNode = 126,
-                        DestinationGroup = (uint)group,
+                        Address = new LonAddressGroup
+                        {
+                            SourceSubnet = 1,
+                            SourceNode = 126,
+                            DestinationGroup = (uint)group
+                        },
                         DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
                         Domain = 0x54,
                         PDU = new LonAPduNetworkVariable
@@ -170,8 +169,29 @@ namespace LonScan
 
         private void TestFunc_Click(object sender, EventArgs e)
         {
+            //string msg = "01 09 01 DA 01 8F 54 01 0E 25 06 23 06 02 C8 00 40 95 03 CD 63";
+            //string msg = "01 19 01 DA 01 8F 54 0F 0E 24 06 21 04 02 C8 00 40";
+            string msg =   "01 19 01 DA 01 8F 54 0F 0B 02 01";
+            byte[] data = msg.Split(' ').Select(b => Convert.ToByte(b, 16)).ToArray();
+
+            var pdu = LonPPdu.FromData(data, 0, data.Length);
+            //pdu.NPDU.DestinationNode = 10;
+            //pdu.NPDU.SourceSubnet = 1;
+            //pdu.NPDU.DestinationSubnet= 1;
+
+            string text = PacketForge.ToString(pdu);
+            Console.WriteLine(text);
+
+            //pdu.NPDU.PDU = (pdu.NPDU.PDU as LonSPdu).APDU;
+
+            bool success = Network.SendMessage(pdu, (p) =>
+                {
+                });
+            return;
+
             /*
-            for (int group = 0; group < 3; group++)
+            for (int group = 0; group < 3
+            ; group++)
             {
                 LonPPdu pdu = new LonPPdu
                 {
@@ -225,6 +245,12 @@ namespace LonScan
                 }
                 Config.Save();
             }
+        }
+
+        private void packetForgeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PacketForgeDlg form = new PacketForgeDlg(Network, Config) { MdiParent = this };
+            form.Show();
         }
     }
 }

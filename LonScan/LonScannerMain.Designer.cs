@@ -51,6 +51,8 @@
             this.importXIFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.testFuncToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.packetForgeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.menuStrip.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -73,6 +75,8 @@
             this.fileMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.importXIFToolStripMenuItem,
             this.updateSystemTimeToolStripMenuItem,
+            this.packetForgeToolStripMenuItem,
+            this.toolStripMenuItem2,
             this.exitToolStripMenuItem,
             this.toolStripMenuItem1,
             this.testFuncToolStripMenuItem});
@@ -222,6 +226,18 @@
             this.testFuncToolStripMenuItem.Visible = false;
             this.testFuncToolStripMenuItem.Click += new System.EventHandler(this.TestFunc_Click);
             // 
+            // packetForgeToolStripMenuItem
+            // 
+            this.packetForgeToolStripMenuItem.Name = "packetForgeToolStripMenuItem";
+            this.packetForgeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.packetForgeToolStripMenuItem.Text = "PacketForge";
+            this.packetForgeToolStripMenuItem.Click += new System.EventHandler(this.packetForgeToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
+            // 
             // LonScannerMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -269,6 +285,8 @@
         private System.Windows.Forms.ToolStripMenuItem importXIFToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem testFuncToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem packetForgeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
     }
 }
 

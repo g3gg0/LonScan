@@ -67,6 +67,13 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="LonDeviceConfig.cs" />
     <Compile Include="LonProtocol.cs" />
+    <Compile Include="PacketForge.cs" />
+    <Compile Include="PacketForgeDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PacketForgeDlg.Designer.cs">
+      <DependentUpon>PacketForgeDlg.cs</DependentUpon>
+    </Compile>
     <Compile Include="ScanForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -93,6 +100,9 @@
     <Compile Include="XifFile.cs" />
     <EmbeddedResource Include="DeviceForm.resx">
       <DependentUpon>DeviceForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PacketForgeDlg.resx">
+      <DependentUpon>PacketForgeDlg.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ScanForm.resx">
       <DependentUpon>ScanForm.cs</DependentUpon>

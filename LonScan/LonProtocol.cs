@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 
 namespace LonScan
 {
@@ -14,7 +16,6 @@ namespace LonScan
         {
             public ulong Value;
             public int Width;
-
 
             public BitInfo(int width)
             {
@@ -68,6 +69,11 @@ namespace LonScan
             Array.Copy(data, offset, ret, 0, length);
 
             return ret;
+        }
+
+        public static ulong ExtractBits(byte[] data, int offset, BitInfo info)
+        {
+            return ExtractBits(data, offset, new[] { info })[0];
         }
 
         public static ulong[] ExtractBits(byte[] data, int offset, params BitInfo[] infos)
@@ -144,12 +150,17 @@ namespace LonScan
 
     public class LonPPdu : LonProtocolBase
     {
+        [PacketFieldBool]
         public uint Prior = 0;
+        [PacketFieldBool]
         public uint AltPath = 0;
+        [PacketFieldUnsigned(6)]
         public uint DeltaBl = 1;
+        [PacketFieldSubtype(typeof(LonNPdu))]
         public LonNPdu NPDU = new LonNPdu();
 
         public int Length => 1 + NPDU.Length;
+        [PacketFieldSdu]
         public byte[] SDU => CombineBits(new BitInfo(0, 1), new BitInfo(Prior, 1), new BitInfo(AltPath, 1), new BitInfo(DeltaBl, 6));
         public byte[] FrameBytes => Concat(SDU, NPDU.DataBytes);
 
@@ -157,8 +168,8 @@ namespace LonScan
         {
             LonPPdu pdu = new LonPPdu();
 
-            ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(1), new BitInfo(6));
-            (pdu.Prior, pdu.AltPath, pdu.DeltaBl) = ((uint)values[1], (uint)values[2], (uint)values[3]);
+            ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(6));
+            (pdu.Prior, pdu.AltPath, pdu.DeltaBl) = ((uint)values[0], (uint)values[1], (uint)values[2]);
 
             pdu.NPDU = LonNPdu.FromData(data, offset + 1, length - 1);
 
@@ -166,18 +177,153 @@ namespace LonScan
         }
     }
 
+
+    public enum LonNPduAddressFormat
+    {
+        Subnet = 0,
+        Group = 1,
+        SubnetNode = 2,
+        SubnetNodeGroup = 2,
+        SubnetNeuron = 3,
+        Invalid = 0xFF
+    }
+
+    public class LonAddress : LonProtocolBase
+    {
+        [PacketFieldUnsigned(8)]
+        public int SourceSubnet = 0;
+        [PacketFieldUnsigned(7)]
+        public int SourceNode = 0;
+
+        internal virtual LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.Invalid;
+
+        public virtual byte[] SDU => new byte[0];
+
+        public virtual bool ForNode(int node) => false;
+        public virtual bool ForGroup(int subnet) => false;
+        public virtual bool ForSubnet(int group) => false;
+        public virtual bool ForNeuron(ulong neuron) => false;
+    }
+
+    public class LonAddressSubnet : LonAddress
+    {
+        [PacketFieldUnsigned(8)]
+        public uint DestinationSubnet = 0;
+        internal override LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.Subnet;
+
+        override public byte[] SDU => CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8));
+
+        public static LonAddress FromData(byte[] data, int offset, int length)
+        {
+            ulong[] addr = ExtractBits(data, offset, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8));
+            var (sourceSubnet, sourceNode, destSubnet) = ((int)addr[0], (int)addr[2], (uint)addr[3]);
+
+            return new LonAddressSubnet { SourceSubnet = sourceSubnet, SourceNode = sourceNode, DestinationSubnet = destSubnet };
+        }
+
+        public override bool ForSubnet(int subnet) => DestinationSubnet == subnet;
+    }
+
+    public class LonAddressGroup : LonAddress
+    {
+        [PacketFieldUnsigned(8)]
+        public uint DestinationGroup = 0;
+        internal override LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.Group;
+
+        override public byte[] SDU => CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationGroup, 8));
+
+        public static LonAddress FromData(byte[] data, int offset, int length)
+        {
+            ulong[] addr = ExtractBits(data, offset, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8));
+            var (sourceSubnet, sourceNode, destinationGroup) = ((int)addr[0], (int)addr[2], (uint)addr[3]);
+            return new LonAddressGroup { SourceSubnet = sourceSubnet, SourceNode = sourceNode, DestinationGroup = destinationGroup };
+        }
+        public override bool ForGroup(int group) => DestinationGroup == group;
+    }
+
+    public class LonAddressNode : LonAddress
+    {
+        [PacketFieldUnsigned(8)]
+        public uint DestinationSubnet = 0;
+        [PacketFieldUnsigned(7)]
+        public uint DestinationNode = 0;
+        internal override LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.SubnetNode;
+
+        override public byte[] SDU => CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(1, 1), new BitInfo(DestinationNode, 7));
+
+        public static LonAddress FromData(byte[] data, int offset, int length)
+        {
+            ulong[] addr = ExtractBits(data, offset, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(1), new BitInfo(7));
+            var (sourceSubnet, bType, sourceNode, destinationSubnet, destinationNode) = ((int)addr[0], (uint)addr[1], (int)addr[2], (uint)addr[3], (uint)addr[5]);
+
+            if (bType == 0)
+            {
+                return LonAddressNodeGroup.FromData(data, offset, length);
+            }
+            return new LonAddressNode { SourceSubnet = sourceSubnet, SourceNode = sourceNode, DestinationSubnet = destinationSubnet, DestinationNode = destinationNode };
+        }
+
+        public override bool ForNode(int node) => DestinationNode == node;
+        public override bool ForSubnet(int subnet) => DestinationSubnet == subnet;
+    }
+
+    public class LonAddressNodeGroup : LonAddress
+    {
+        [PacketFieldUnsigned(8)]
+        public uint DestinationSubnet = 0;
+        [PacketFieldUnsigned(7)]
+        public uint DestinationNode = 0;
+        [PacketFieldUnsigned(8)]
+        public uint DestinationGroup = 0;
+        [PacketFieldUnsigned(8)]
+        public uint DestinationGroupMember = 0;
+        internal override LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.SubnetNodeGroup;
+
+        override public byte[] SDU => CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(0, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(1, 1), new BitInfo(DestinationNode, 7), new BitInfo(DestinationGroup, 8), new BitInfo(DestinationGroupMember, 8));
+
+        public static LonAddress FromData(byte[] data, int offset, int length)
+        {
+            ulong[] addr = ExtractBits(data, offset, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(8));
+            var (sourceSubnet, sourceNode, destinationSubnet, destinationNode, destinationGroup, destinationGroupMember) = ((int)addr[0], (int)addr[2], (uint)addr[3], (uint)addr[5], (uint)addr[6], (uint)addr[7]);
+
+            return new LonAddressNodeGroup { SourceSubnet = sourceSubnet, SourceNode = sourceNode, DestinationSubnet = destinationSubnet, DestinationNode = destinationNode, DestinationGroup = destinationGroup, DestinationGroupMember = destinationGroupMember };
+        }
+        public override bool ForNode(int node) => DestinationNode == node;
+        public override bool ForSubnet(int subnet) => DestinationSubnet == subnet;
+    }
+
+    public class LonAddressNeuron : LonAddress
+    {
+        [PacketFieldUnsigned(8)]
+        public uint DestinationSubnet = 0;
+        [PacketFieldUnsigned(48)]
+        public ulong DestinationNeuron = 0;
+        internal override LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.SubnetNeuron;
+
+        override public byte[] SDU => CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(DestinationNeuron, 48));
+
+        public static LonAddress FromData(byte[] data, int offset, int length)
+        {
+            ulong[] addr = ExtractBits(data, offset, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(48));
+            var (sourceSubnet, sourceNode, destinationSubnet, destinationNeuron) = ((int)addr[0], (int)addr[2], (uint)addr[3], (uint)addr[4]);
+
+            return new LonAddressNeuron { SourceSubnet = sourceSubnet, SourceNode = sourceNode, DestinationSubnet = destinationSubnet, DestinationNeuron = destinationNeuron };
+        }
+
+        public override bool ForNeuron(ulong neuron) => DestinationNeuron == neuron;
+    }
+
     public class LonNPdu : LonProtocolBase
     {
+        [PacketFieldUnsigned(2)]
         public uint Version = 0;
+        [PacketFieldEnum]
+        public LonNPduDomainLength DomainLength = 0;
+        [PacketFieldUnsigned]
         public uint Domain = 0;
-        /* address */
-        public uint SourceSubnet = 0;
-        public uint SourceNode = 0;
-        public uint DestinationSubnet = 0;
-        public uint DestinationNode = 0;
-        public uint DestinationGroup = 0;
-        public uint DestinationGroupMember = 0;
-        public ulong DestinationNeuron = 0;
+
+        [PacketFieldSubtype(typeof(LonAddressGroup), typeof(LonAddressNeuron), typeof(LonAddressNode), typeof(LonAddressNodeGroup), typeof(LonAddressSubnet))]
+        public LonAddress Address;
 
 
         public LonNPduFormat PduFormat
@@ -204,8 +350,9 @@ namespace LonScan
                 return LonNPduFormat.Invalid;
             }
         }
-        public LonNPduAddressFormat AddressFormat = 0;
-        public LonNPduDomainLength DomainLength = 0;
+
+
+        [PacketFieldSubtype(typeof(LonTPdu), typeof(LonSPdu), typeof(LonAuthPdu), typeof(LonAPdu))]
         public LonPdu PDU = new LonPdu();
 
         public enum LonNPduFormat
@@ -217,14 +364,6 @@ namespace LonScan
             Invalid
         }
 
-        public enum LonNPduAddressFormat
-        {
-            Subnet = 0,
-            Group = 1,
-            SubnetNode = 2,
-            SubnetNodeGroup = 0x80 | 2,
-            SubnetNeuron = 3,
-        }
 
         public enum LonNPduDomainLength
         {
@@ -261,35 +400,9 @@ namespace LonScan
             }
         }
 
-        public byte[] AddressBytes
-        {
-            get
-            {
-                byte[] address = new byte[0];
+        public byte[] AddressBytes => Address.SDU;
 
-                switch (AddressFormat)
-                {
-                    case LonNPduAddressFormat.Subnet:
-                        address = CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8));
-                        break;
-                    case LonNPduAddressFormat.Group:
-                        address = CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationGroup, 8));
-                        break;
-                    case LonNPduAddressFormat.SubnetNode:
-                        address = CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(1, 1), new BitInfo(DestinationNode, 7));
-                        break;
-                    case LonNPduAddressFormat.SubnetNodeGroup:
-                        address = CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(0, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(1, 1), new BitInfo(DestinationNode, 7), new BitInfo(DestinationGroup, 8), new BitInfo(DestinationGroupMember, 8));
-                        break;
-                    case LonNPduAddressFormat.SubnetNeuron:
-                        address = CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(DestinationNeuron, 8));
-                        break;
-                }
-                return address;
-            }
-        }
-
-        public byte[] SDU => Concat(CombineBits(new BitInfo(Version, 2), new BitInfo((int)PduFormat, 2), new BitInfo((int)AddressFormat, 2), new BitInfo((int)DomainLength, 2)), AddressBytes, DomainBytes);
+        public byte[] SDU => Concat(CombineBits(new BitInfo(Version, 2), new BitInfo((int)PduFormat, 2), new BitInfo((int)Address.AddressFormat, 2), new BitInfo((int)DomainLength, 2)), AddressBytes, DomainBytes);
 
         public byte[] DataBytes => Concat(SDU, PDU.FrameBytes);
 
@@ -298,71 +411,52 @@ namespace LonScan
             LonNPdu pdu = new LonNPdu();
 
             LonNPduFormat pduFormat;
+            LonNPduAddressFormat addressFormat;
 
             ulong[] values = ExtractBits(data, offset, new BitInfo(0, 2), new BitInfo(0, 2), new BitInfo(0, 2), new BitInfo(0, 2));
-            (pdu.Version, pduFormat, pdu.AddressFormat, pdu.DomainLength) = ((uint)values[0], (LonNPduFormat)values[1], (LonNPduAddressFormat)values[2], (LonNPduDomainLength)values[3]);
+            (pdu.Version, pduFormat, addressFormat, pdu.DomainLength) = ((uint)values[0], (LonNPduFormat)values[1], (LonNPduAddressFormat)values[2], (LonNPduDomainLength)values[3]);
 
-            int addressLength = 0;
+            offset++;
+            length--;
 
-            switch (pdu.AddressFormat)
+            switch (addressFormat)
             {
                 case LonNPduAddressFormat.Subnet:
-                    {
-                        addressLength = 3;
-                        ulong[] addr = ExtractBits(data, offset+1, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8));
-                        (pdu.SourceSubnet, pdu.SourceNode, pdu.SourceSubnet) = ((uint)addr[0], (uint)addr[2], (uint)addr[3]);
-                        break;
-                    }
+                    pdu.Address = LonAddressSubnet.FromData(data, offset, length);
+                    break;
                 case LonNPduAddressFormat.Group:
-                    {
-                        addressLength = 3;
-                        ulong[] addr = ExtractBits(data, offset+1, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8));
-                        (pdu.SourceSubnet, pdu.SourceNode, pdu.DestinationGroup) = ((uint)addr[0], (uint)addr[2], (uint)addr[3]);
-                        break;
-                    }
+                    pdu.Address = LonAddressGroup.FromData(data, offset, length);
+                    break;
                 case LonNPduAddressFormat.SubnetNode:
-                    {
-                        addressLength = 4;
-                        uint bType = 0;
-                        ulong[] addr = ExtractBits(data, offset+1, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(1), new BitInfo(7));
-                        (pdu.SourceSubnet, bType, pdu.SourceNode, pdu.DestinationSubnet, pdu.DestinationNode) = ((uint)addr[0], (uint)addr[1], (uint)addr[2], (uint)addr[3], (uint)addr[5]);
-
-                        if(bType == 0)
-                        {
-                            pdu.AddressFormat = LonNPduAddressFormat.SubnetNodeGroup;
-                            addressLength = 6;
-                            addr = ExtractBits(data, offset+1, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(8));
-                            (pdu.SourceSubnet, pdu.SourceNode, pdu.DestinationSubnet, pdu.DestinationNode, pdu.DestinationGroup, pdu.DestinationGroupMember) = ((uint)addr[0], (uint)addr[2], (uint)addr[3], (uint)addr[5], (uint)addr[6], (uint)addr[7]);
-                        }
-                        break;
-                    }
+                    pdu.Address = LonAddressNode.FromData(data, offset, length);
+                    break;
                 case LonNPduAddressFormat.SubnetNeuron:
-                    {
-                        addressLength = 9;
-                        ulong[] addr = ExtractBits(data, offset+1, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(48));
-                        (pdu.SourceSubnet, pdu.SourceNode, pdu.DestinationSubnet, pdu.DestinationNeuron) = ((uint)addr[0], (uint)addr[2], (uint)addr[3], (uint)addr[4]);
-                        break;
-                    }
+                    pdu.Address = LonAddressNeuron.FromData(data, offset, length);
+                    break;
             }
 
-            pdu.Domain = (uint)ExtractBits(data, offset + 1 + addressLength, new BitInfo((int)pdu.DomainLength * 8))[0];
+            int addrLen = pdu.Address.SDU.Length;
+            offset += addrLen;
+            length -= addrLen;
 
-            int pduOffset = offset + 1 + addressLength + (int)pdu.DomainLength;
-            int pduLength = length - (1 + addressLength + (int)pdu.DomainLength);
+            pdu.Domain = (uint)ExtractBits(data, offset, new BitInfo((int)pdu.DomainLength * 8));
+            offset += (int)pdu.DomainLength;
+            length -= (int)pdu.DomainLength;
+
 
             switch (pduFormat)
             {
                 case LonNPduFormat.TPDU:
-                    pdu.PDU = LonTPdu.FromData(data, pduOffset, pduLength);
+                    pdu.PDU = LonTPdu.FromData(data, offset, length);
                     break;
                 case LonNPduFormat.SPDU:
-                    pdu.PDU = LonSPdu.FromData(data, pduOffset, pduLength);
+                    pdu.PDU = LonSPdu.FromData(data, offset, length);
                     break;
                 case LonNPduFormat.AuthPDU:
-                    pdu.PDU = LonAuthPdu.FromData(data, pduOffset, pduLength);
+                    pdu.PDU = LonAuthPdu.FromData(data, offset, length);
                     break;
                 case LonNPduFormat.APDU:
-                    pdu.PDU = LonAPdu.FromData(data, pduOffset, pduLength);
+                    pdu.PDU = LonAPdu.FromData(data, offset, length);
                     break;
             }
 
@@ -372,20 +466,29 @@ namespace LonScan
 
     public class LonPdu : LonProtocolBase
     {
-        public uint TransNo = 0;
-
         public virtual int Length => FrameBytes.Length;
         public virtual byte[] SDU => new byte[0];
         public virtual byte[] Payload => new byte[0];
         public virtual byte[] FrameBytes => Concat(SDU, Payload);
     }
 
-    public class LonTPdu : LonPdu
+    public class LonTransPdu : LonPdu
     {
+        [PacketFieldUnsigned]
+        public uint TransNo = 0;
+    }
+
+    public class LonTPdu : LonTransPdu
+    {
+        [PacketFieldBool]
         public uint Auth = 0;
+        [PacketFieldUnsigned]
         public uint ReminderLength = 0;
+        [PacketFieldUnsigned]
         public ulong ReminderMList = 0;
+        [PacketFieldEnum]
         public LonTPduType TPDUType = 0;
+        [PacketFieldSubtype(typeof(LonAPdu))]
         public LonAPdu APDU = new LonAPdu();
 
         public enum LonTPduType
@@ -444,12 +547,12 @@ namespace LonScan
                     break;
                 case LonTPduType.Reminder:
                     pdu.ReminderLength = (uint)(24 + data[offset + 1] * 8);
-                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength))[0];
+                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength));
                     break;
                 case LonTPduType.RemMessage:
                     int msgBytes = data[offset + 1];
                     pdu.ReminderLength = (uint)(msgBytes * 8);
-                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength))[0];
+                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength));
                     pdu.APDU = LonAPdu.FromData(data, offset + 2 + msgBytes, length - 2 - msgBytes);
                     break;
             }
@@ -458,12 +561,17 @@ namespace LonScan
         }
     }
 
-    public class LonSPdu : LonPdu
+    public class LonSPdu : LonTransPdu
     {
+        [PacketFieldBool]
         public uint Auth = 0;
+        [PacketFieldUnsigned]
         public uint ReminderLength = 0;
+        [PacketFieldUnsigned]
         public ulong ReminderMList = 0;
+        [PacketFieldEnum]
         public LonSPduType SPDUType = 0;
+        [PacketFieldSubtype]
         public LonAPdu APDU = new LonAPdu();
 
         public enum LonSPduType
@@ -517,12 +625,12 @@ namespace LonScan
                     break;
                 case LonSPduType.Reminder:
                     pdu.ReminderLength = (uint)(24 + data[offset + 1] * 8);
-                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength))[0];
+                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength));
                     break;
                 case LonSPduType.RemMessage:
                     int msgBytes = data[offset + 1];
                     pdu.ReminderLength = (uint)(msgBytes * 8);
-                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength))[0];
+                    pdu.ReminderMList = ExtractBits(data, offset + 2, new BitInfo(pdu.ReminderLength));
                     pdu.APDU = LonAPdu.FromData(data, offset + 2 + msgBytes, length - 2 - msgBytes);
                     break;
             }
@@ -531,7 +639,7 @@ namespace LonScan
         }
     }
 
-    public class LonAuthPdu : LonPdu
+    public class LonAuthPdu : LonTransPdu
     {
         public uint Fmt = 0;
         public ulong RandomBytes = 0;
@@ -554,7 +662,7 @@ namespace LonScan
             LonAuthPdu pdu = new LonAuthPdu();
 
             /* only if Fmt == 1 we have a group */
-            if (ExtractBits(data, offset, new BitInfo(2))[0] == 0)
+            if (ExtractBits(data, offset, new BitInfo(2)) == 0)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(2), new BitInfo(2), new BitInfo(4), new BitInfo(64));
                 (pdu.Fmt, pdu.AuthPDUType, pdu.TransNo, pdu.RandomBytes) = ((uint)values[0], (LonAuthPDUType)values[1], (uint)values[2], (uint)values[3]);
@@ -570,9 +678,8 @@ namespace LonScan
 
     public class LonAPdu : LonPdu
     {
+        [PacketFieldData]
         public byte[] Data = new byte[0];
-
-    
 
         public override byte[] SDU => new byte[0];
 
@@ -582,7 +689,7 @@ namespace LonScan
         {
             LonAPdu pdu = null;
 
-            if ((data[offset] & 0x80) != 0)
+            if (ExtractBits(data, offset, new BitInfo(1)) != 0)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(14));
                 pdu = new LonAPduNetworkVariable
@@ -592,7 +699,7 @@ namespace LonScan
                     Data = ExtractBytes(data, offset + 2, length - 2)
                 };
             }
-            else if ((data[offset] & 0xC0) == 0)
+            else if (ExtractBits(data, offset, new BitInfo(2)) == 0)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(2), new BitInfo(6));
                 pdu = new LonAPduGenericApplication
@@ -601,25 +708,25 @@ namespace LonScan
                     Data = ExtractBytes(data, offset + 1, length - 1)
                 };
             }
-            else if ((data[offset] & 0xE0) == 3)
+            else if (ExtractBits(data, offset, new BitInfo(3)) == 3)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(3), new BitInfo(5));
                 pdu = new LonAPduNetworkManagement
                 {
-                    Code = (uint)values[1],
+                    Code = (LonAPduNMType)values[1],
                     Data = ExtractBytes(data, offset + 1, length - 1)
                 };
             }
-            else if ((data[offset] & 0xF0) == 5)
+            else if (ExtractBits(data, offset, new BitInfo(4)) == 5)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(4), new BitInfo(4));
                 pdu = new LonAPduNetworkDiagnostic
                 {
-                    Code = (uint)values[1],
+                    Code = (LonAPduDType)values[1],
                     Data = ExtractBytes(data, offset + 1, length - 1)
                 };
             }
-            else if ((data[offset] & 0xF0) == 4)
+            else if (ExtractBits(data, offset, new BitInfo(4)) == 4)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(4), new BitInfo(4));
                 pdu = new LonAPduForeignFrame
@@ -683,6 +790,15 @@ namespace LonScan
             ForeignFrame
         }
 
+
+        public enum LonAPduDType
+        {
+            QueryStatus = 1,
+            ProxyStatus = 2,
+            ClearStatus = 3,
+            QueryTransceiverStatus = 4
+        }
+
         public enum LonAPduNMType
         {
             QueryId = 1,
@@ -721,7 +837,9 @@ namespace LonScan
 
     public class LonAPduNetworkVariable : LonAPdu
     {
+        [PacketFieldUnsigned]
         public uint Selector = 0;
+        [PacketFieldEnum]
         public LonAPduDirection Direction;
 
         public override byte[] SDU => CombineBits(new BitInfo(1, 1), new BitInfo((int)Direction, 1), new BitInfo(Selector, 14));
@@ -729,6 +847,7 @@ namespace LonScan
 
     public class LonAPduGenericApplication : LonAPdu
     {
+        [PacketFieldUnsigned]
         public uint Code = 0;
 
         public override byte[] SDU => CombineBits(new BitInfo(0, 2), new BitInfo(Code, 6));
@@ -736,9 +855,10 @@ namespace LonScan
 
     public class LonAPduNetworkManagement : LonAPdu
     {
-        public uint Code = 0;
+        [PacketFieldEnum]
+        public LonAPduNMType Code = 0;
 
-        public override byte[] SDU => CombineBits(new BitInfo(3, 3), new BitInfo(Code, 5));
+        public override byte[] SDU => CombineBits(new BitInfo(3, 3), new BitInfo((int)Code, 5));
 
 
         /// <summary>
@@ -752,7 +872,7 @@ namespace LonScan
         {
             return new LonAPduNetworkManagement
             {
-                Code = (int)LonAPduNMType.ReadMemory,
+                Code = LonAPduNMType.ReadMemory,
                 Data = new byte[] { (byte)type, (byte)(address >> 8), (byte)(address & 0xFF), (byte)length }
             };
         }
@@ -760,13 +880,15 @@ namespace LonScan
 
     public class LonAPduNetworkDiagnostic : LonAPdu
     {
-        public uint Code = 0;
+        [PacketFieldEnum]
+        public LonAPduDType Code = 0;
 
-        public override byte[] SDU => CombineBits(new BitInfo(5, 4), new BitInfo(Code, 4));
+        public override byte[] SDU => CombineBits(new BitInfo(5, 4), new BitInfo((int)Code, 4));
     }
 
     public class LonAPduForeignFrame : LonAPdu
     {
+        [PacketFieldUnsigned]
         public uint Code = 0;
 
         public override byte[] SDU => CombineBits(new BitInfo(4, 4), new BitInfo(Code, 4));

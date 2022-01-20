@@ -87,7 +87,7 @@ namespace LonScan
             {
                 if (pdu.NPDU != null)
                 {
-                    int address = (int)pdu.NPDU.SourceNode;
+                    int address = (int)pdu.NPDU.Address.SourceNode;
 
                     string possible = "";
 
