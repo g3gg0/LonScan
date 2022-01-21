@@ -162,6 +162,8 @@ namespace LonScan
 
         private void PacketReceived(LonPPdu pdu)
         {
+            Console.WriteLine(BitConverter.ToString(pdu.FrameBytes).Replace("-", " "));
+            Console.WriteLine();
             Console.WriteLine(PacketForge.ToString(pdu));
 
             OnReceive(pdu);

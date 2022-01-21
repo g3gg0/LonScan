@@ -829,9 +829,9 @@ namespace LonScan
             RouterDoNotForwardSubnet = 26,
             RouterGroupOrSubnetTableReport = 27,
             RouterStatus = 28,
+            NetworkManagementEscapeCode = 29,
             RouterHalfEscapeCode = 30,
-            ServicePinMessage = 31,
-            NetworkManagementEscapeCode = 0x7D
+            ServicePinMessage = 31
         }
     }
 

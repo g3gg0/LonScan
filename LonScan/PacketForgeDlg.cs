@@ -45,7 +45,7 @@ namespace LonScan
 
             var pdu = LonPPdu.FromData(data, 0, data.Length);
 
-            txtTxDump.Text = PacketForge.ToString(pdu);
+            txtTxDump.Text = BitConverter.ToString(pdu.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(pdu);
 
             if (pdu.NPDU.Address.SourceNode != Network.SourceNode)
             {
@@ -99,7 +99,7 @@ namespace LonScan
             {
                 BeginInvoke(new Action(() =>
                 {
-                    txtRxDump.Text = PacketForge.ToString(r);
+                    txtRxDump.Text = BitConverter.ToString(r.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(r);
                 }));
             }, wait ? Config.PacketForgeTimeout : -1);
 

@@ -10,102 +10,138 @@ namespace LonScan
         {
             StringBuilder sb = new StringBuilder();
 
-            var fields = pdu.GetType().GetFields();
-
-            foreach (var field in fields)
+            try
             {
-                Type ft = field.FieldType;
 
-                foreach (var att in field.GetCustomAttributes(typeof(PacketForgeAttribute), true))
+                var fields = pdu.GetType().GetFields();
+
+                foreach (var field in fields)
                 {
-                    if (!(att is PacketForgeAttribute pfAtt))
+                    Type ft = field.FieldType;
+
+                    foreach (var att in field.GetCustomAttributes(typeof(PacketForgeAttribute), true))
                     {
-                        continue;
-                    }
-
-                    string typeString = "";
-                    string nameString = "";
-                    string valueString = "";
-                    string infoString = "";
-
-                    nameString = field.Name.PadRight(16);
-
-
-                    if (pfAtt is PacketFieldBoolAttribute)
-                    {
-                        bool value = false;
-                        if (ft == typeof(bool))
+                        if (!(att is PacketForgeAttribute pfAtt))
                         {
-                            value = (bool)field.GetValue(pdu);
-                        }
-                        else if (ft == typeof(int))
-                        {
-                            value = (int)field.GetValue(pdu) > 0;
-                        }
-                        else if (ft == typeof(uint))
-                        {
-                            value = (uint)field.GetValue(pdu) > 0;
+                            continue;
                         }
 
-                        typeString = "bool";
-                        valueString = value ? "yes" : "no";
-                    }
-                    else if (pfAtt is PacketFieldUnsignedAttribute)
-                    {
-                        PacketFieldUnsignedAttribute attrib = (PacketFieldUnsignedAttribute)pfAtt;
+                        string typeString = "";
+                        string nameString = "";
+                        string valueString = "";
+                        string infoString = "";
 
-                        int value = 0;
-                        if (ft == typeof(int))
+                        nameString = field.Name.PadRight(16);
+
+
+                        if (pfAtt is PacketFieldBoolAttribute)
                         {
-                            value = (int)field.GetValue(pdu);
+                            bool value = false;
+                            if (ft == typeof(bool))
+                            {
+                                value = (bool)field.GetValue(pdu);
+                            }
+                            else if (ft == typeof(int))
+                            {
+                                value = (int)field.GetValue(pdu) > 0;
+                            }
+                            else if (ft == typeof(uint))
+                            {
+                                value = (uint)field.GetValue(pdu) > 0;
+                            }
+
+                            typeString = "bool";
+                            valueString = value ? "yes" : "no";
                         }
-                        else if (ft == typeof(uint))
+                        else if (pfAtt is PacketFieldUnsignedAttribute)
                         {
-                            value = (int)(uint)field.GetValue(pdu);
+                            PacketFieldUnsignedAttribute attrib = (PacketFieldUnsignedAttribute)pfAtt;
+
+                            int value = 0;
+                            if (ft == typeof(int))
+                            {
+                                value = (int)field.GetValue(pdu);
+                            }
+                            else if (ft == typeof(uint))
+                            {
+                                value = (int)(uint)field.GetValue(pdu);
+                            }
+
+                            typeString = "int";
+                            valueString = "0x" + value.ToString("X2") + " / " + value.ToString();
+                            infoString = "";// "(" + attrib.Width + " bit)";
                         }
-
-                        typeString = "int";
-                        valueString = value.ToString();
-                        infoString = "";// "(" + attrib.Width + " bit)";
-                    }
-                    else if (pfAtt is PacketFieldEnumAttribute)
-                    {
-                        typeString = ft.Name;
-                        valueString = Enum.GetName(ft, field.GetValue(pdu));
-                    }
-                    else if (pfAtt is PacketFieldSduAttribute)
-                    {
-                        string data = "";
-
-                        BitConverter.ToString((byte[])field.GetValue(pdu)).Replace("-", " ");
-
-                        typeString = "byte[]";
-                        valueString = data;
-                    }
-                    else if (pfAtt is PacketFieldDataAttribute)
-                    {
-                        string data = BitConverter.ToString((byte[])field.GetValue(pdu)).Replace("-", " ");
-
-                        typeString = "byte[]";
-                        valueString = "[ " + data + " ]";
-                    }
-                    else if (pfAtt is PacketFieldSubtypeAttribute)
-                    {
-                        PacketFieldSubtypeAttribute attrib = (PacketFieldSubtypeAttribute)att;
-
-                        object sub = field.GetValue(pdu);
-
-                        if (sub != null)
+                        else if (pfAtt is PacketFieldEnumAttribute)
                         {
-                            valueString = sub.GetType().Name + Environment.NewLine + ToString(sub, indent + "  ").TrimEnd(new[] { '\r', '\n' });
+                            typeString = ft.Name;
+                            if (Enum.IsDefined(ft, field.GetValue(pdu)))
+                            {
+                                valueString = Enum.GetName(ft, field.GetValue(pdu)) + " (" + (int)field.GetValue(pdu) + ")";
+                            }
+                            else
+                            {
+                                valueString = "(invalid) " + (int)field.GetValue(pdu);
+                            }
                         }
-                        else
+                        else if (pfAtt is PacketFieldSduAttribute)
                         {
-                            valueString = field.FieldType.Name + " (null)";
-                        }
-                    }
+                            string data = "";
 
-                    sb.AppendLine(indent + /*" "+ typeString.PadRight(16) + */" " + nameString.PadRight(24) + " = " + valueString + " " + infoString);
+                            BitConverter.ToString((byte[])field.GetValue(pdu)).Replace("-", " ");
+
+                            typeString = "byte[]";
+                            valueString = data;
+                        }
+                        else if (pfAtt is PacketFieldDataAttribute)
+                        {
+                            byte[] bytes = (byte[])field.GetValue(pdu);
+                            string data = BitConverter.ToString(bytes).Replace("-", " ");
+
+                            string readable = ReadableString(Encoding.ASCII.GetString(bytes));
+                            typeString = "byte[]";
+                            valueString = "[ " + data + " ] \""+readable+"\"";
+                        }
+                        else if (pfAtt is PacketFieldSubtypeAttribute)
+                        {
+                            PacketFieldSubtypeAttribute attrib = (PacketFieldSubtypeAttribute)att;
+
+                            object sub = field.GetValue(pdu);
+
+                            if (sub != null)
+                            {
+                                valueString = sub.GetType().Name + Environment.NewLine + ToString(sub, indent + "  ").TrimEnd(new[] { '\r', '\n' });
+                            }
+                            else
+                            {
+                                valueString = field.FieldType.Name + " (null)";
+                            }
+                        }
+
+                        sb.AppendLine(indent + /*" "+ typeString.PadRight(16) + */"" + nameString.PadRight(24) + " = " + valueString + " " + infoString);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                sb.Append("Failed to process: " + ex.ToString());
+            }
+
+            return sb.ToString();
+        }
+
+        private static string ReadableString(string v)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach(char c in v)
+            {
+                if(c > 0x20 && c < 0x80)
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append('.');
                 }
             }
 
