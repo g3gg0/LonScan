@@ -35,6 +35,13 @@
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader12 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label3 = new System.Windows.Forms.Label();
@@ -43,13 +50,6 @@
             this.txtFirmwareVer = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.txtFirmwareProd = new System.Windows.Forms.TextBox();
-            this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader12 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -78,7 +78,7 @@
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(0, 0);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(775, 376);
+            this.listView1.Size = new System.Drawing.Size(1056, 376);
             this.listView1.TabIndex = 2;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
@@ -108,6 +108,34 @@
             this.columnHeader5.Text = "Value";
             this.columnHeader5.Width = 155;
             // 
+            // columnHeader6
+            // 
+            this.columnHeader6.Text = "Cfg: Priority";
+            // 
+            // columnHeader7
+            // 
+            this.columnHeader7.Text = "Cfg: Direction";
+            // 
+            // columnHeader8
+            // 
+            this.columnHeader8.Text = "Cfg: NetVar";
+            // 
+            // columnHeader9
+            // 
+            this.columnHeader9.Text = "Cfg: Turnaround";
+            // 
+            // columnHeader10
+            // 
+            this.columnHeader10.Text = "Cfg: Service";
+            // 
+            // columnHeader11
+            // 
+            this.columnHeader11.Text = "Cfg: Authenticated";
+            // 
+            // columnHeader12
+            // 
+            this.columnHeader12.Text = "Cfg: Address Table Index";
+            // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -124,7 +152,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.listView1);
-            this.splitContainer1.Size = new System.Drawing.Size(775, 512);
+            this.splitContainer1.Size = new System.Drawing.Size(1056, 512);
             this.splitContainer1.SplitterDistance = 132;
             this.splitContainer1.TabIndex = 3;
             // 
@@ -197,39 +225,11 @@
             this.txtFirmwareProd.TabIndex = 0;
             this.txtFirmwareProd.Text = "Fetching...";
             // 
-            // columnHeader6
-            // 
-            this.columnHeader6.Text = "Cfg: Priority";
-            // 
-            // columnHeader7
-            // 
-            this.columnHeader7.Text = "Cfg: Direction";
-            // 
-            // columnHeader8
-            // 
-            this.columnHeader8.Text = "Cfg: NetVar";
-            // 
-            // columnHeader9
-            // 
-            this.columnHeader9.Text = "Cfg: Turnaround";
-            // 
-            // columnHeader10
-            // 
-            this.columnHeader10.Text = "Cfg: Service";
-            // 
-            // columnHeader11
-            // 
-            this.columnHeader11.Text = "Cfg: Authenticated";
-            // 
-            // columnHeader12
-            // 
-            this.columnHeader12.Text = "Cfg: Address Table Index";
-            // 
             // DeviceForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(775, 512);
+            this.ClientSize = new System.Drawing.Size(1056, 512);
             this.Controls.Add(this.splitContainer1);
             this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));

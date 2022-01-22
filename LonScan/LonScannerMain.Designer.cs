@@ -32,8 +32,13 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LonScannerMain));
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.importXIFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.updateSystemTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.packetForgeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.testFuncToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.windowsMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.cascadeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tileVerticalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -48,11 +53,6 @@
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.importXIFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
-            this.testFuncToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.packetForgeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.menuStrip.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -66,7 +66,7 @@
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.MdiWindowListItem = this.windowsMenu;
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(985, 24);
+            this.menuStrip.Size = new System.Drawing.Size(1223, 24);
             this.menuStrip.TabIndex = 0;
             this.menuStrip.Text = "MenuStrip";
             // 
@@ -85,19 +85,52 @@
             this.fileMenu.Size = new System.Drawing.Size(46, 20);
             this.fileMenu.Text = "&Datei";
             // 
+            // importXIFToolStripMenuItem
+            // 
+            this.importXIFToolStripMenuItem.Name = "importXIFToolStripMenuItem";
+            this.importXIFToolStripMenuItem.Size = new System.Drawing.Size(166, 22);
+            this.importXIFToolStripMenuItem.Text = "Importiere .XIF...";
+            this.importXIFToolStripMenuItem.Click += new System.EventHandler(this.ladeXIFToolStripMenuItem_Click);
+            // 
             // updateSystemTimeToolStripMenuItem
             // 
             this.updateSystemTimeToolStripMenuItem.Name = "updateSystemTimeToolStripMenuItem";
-            this.updateSystemTimeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.updateSystemTimeToolStripMenuItem.Size = new System.Drawing.Size(166, 22);
             this.updateSystemTimeToolStripMenuItem.Text = "&Systemzeit setzen";
             this.updateSystemTimeToolStripMenuItem.Click += new System.EventHandler(this.updateSystemTimeToolStripMenuItem_Click);
+            // 
+            // packetForgeToolStripMenuItem
+            // 
+            this.packetForgeToolStripMenuItem.Name = "packetForgeToolStripMenuItem";
+            this.packetForgeToolStripMenuItem.Size = new System.Drawing.Size(166, 22);
+            this.packetForgeToolStripMenuItem.Text = "PacketForge";
+            this.packetForgeToolStripMenuItem.Click += new System.EventHandler(this.packetForgeToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(163, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(166, 22);
             this.exitToolStripMenuItem.Text = "&Beenden";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolsStripMenuItem_Click);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(163, 6);
+            this.toolStripMenuItem1.Visible = false;
+            // 
+            // testFuncToolStripMenuItem
+            // 
+            this.testFuncToolStripMenuItem.Name = "testFuncToolStripMenuItem";
+            this.testFuncToolStripMenuItem.Size = new System.Drawing.Size(166, 22);
+            this.testFuncToolStripMenuItem.Text = "Testfunktion";
+            this.testFuncToolStripMenuItem.Visible = false;
+            this.testFuncToolStripMenuItem.Click += new System.EventHandler(this.TestFunc_Click);
             // 
             // windowsMenu
             // 
@@ -155,7 +188,7 @@
             this.toolStripSeparator2});
             this.toolStrip.Location = new System.Drawing.Point(0, 24);
             this.toolStrip.Name = "toolStrip";
-            this.toolStrip.Size = new System.Drawing.Size(985, 25);
+            this.toolStrip.Size = new System.Drawing.Size(1223, 25);
             this.toolStrip.TabIndex = 1;
             this.toolStrip.Text = "ToolStrip";
             // 
@@ -195,7 +228,7 @@
             this.toolStripStatusLabel});
             this.statusStrip.Location = new System.Drawing.Point(0, 620);
             this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Size = new System.Drawing.Size(985, 22);
+            this.statusStrip.Size = new System.Drawing.Size(1223, 22);
             this.statusStrip.TabIndex = 2;
             this.statusStrip.Text = "StatusStrip";
             // 
@@ -205,44 +238,11 @@
             this.toolStripStatusLabel.Size = new System.Drawing.Size(39, 17);
             this.toolStripStatusLabel.Text = "Status";
             // 
-            // importXIFToolStripMenuItem
-            // 
-            this.importXIFToolStripMenuItem.Name = "importXIFToolStripMenuItem";
-            this.importXIFToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.importXIFToolStripMenuItem.Text = "Importiere .XIF...";
-            this.importXIFToolStripMenuItem.Click += new System.EventHandler(this.ladeXIFToolStripMenuItem_Click);
-            // 
-            // toolStripMenuItem1
-            // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(177, 6);
-            this.toolStripMenuItem1.Visible = false;
-            // 
-            // testFuncToolStripMenuItem
-            // 
-            this.testFuncToolStripMenuItem.Name = "testFuncToolStripMenuItem";
-            this.testFuncToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.testFuncToolStripMenuItem.Text = "Testfunktion";
-            this.testFuncToolStripMenuItem.Visible = false;
-            this.testFuncToolStripMenuItem.Click += new System.EventHandler(this.TestFunc_Click);
-            // 
-            // packetForgeToolStripMenuItem
-            // 
-            this.packetForgeToolStripMenuItem.Name = "packetForgeToolStripMenuItem";
-            this.packetForgeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.packetForgeToolStripMenuItem.Text = "PacketForge";
-            this.packetForgeToolStripMenuItem.Click += new System.EventHandler(this.packetForgeToolStripMenuItem_Click);
-            // 
-            // toolStripMenuItem2
-            // 
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
-            // 
             // LonScannerMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(985, 642);
+            this.ClientSize = new System.Drawing.Size(1223, 642);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.toolStrip);
             this.Controls.Add(this.menuStrip);

@@ -8,7 +8,9 @@ using System.Windows.Forms;
    Icons:
     https://www.flaticon.com/free-icon/target_3094446
     https://pixabay.com/vectors/add-cross-green-maths-plus-symbol-159647/
- 
+    https://pixabay.com/vectors/icons-technology-devices-1312802/
+
+    convert dev.png  -bordercolor white -border 0 \( -clone 0 -resize 16x16 \)           \( -clone 0 -resize 32x32 \)           \( -clone 0 -resize 48x48 \)           \( -clone 0 -resize 64x64 \)           -delete 0 -alpha off -colors 256 dev.ico
  */
 
 
