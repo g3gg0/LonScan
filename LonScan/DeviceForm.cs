@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -31,11 +32,11 @@ namespace LonScan
 
                 if (Device.Config.NvMap.ContainsKey(nv))
                 {
-                    item = new ListViewItem(new string[12] { nv.ToString("X2"), Device.Config.NvMap[nv].Name, Device.Config.NvMap[nv].Description, "", "", "", "", "", "", "", "", "" });
+                    item = new ListViewItem(new string[13] { nv.ToString("X2"), Device.Config.NvMap[nv].Name, Device.Config.NvMap[nv].Description, "", "", "", "", "", "", "", "", "", "" });
                 }
                 else
                 {
-                    item = new ListViewItem(new string[12] { nv.ToString("X2"), "(unused)", "", "", "", "", "", "", "", "", "", "" });
+                    item = new ListViewItem(new string[13] { nv.ToString("X2"), "(unused)", "", "", "", "", "", "", "", "", "", "", "" });
                 }
                 listView1.Items.Add(item);
             }
@@ -70,7 +71,7 @@ namespace LonScan
                 {
                     while (listView1.Items.Count <= nv_recv)
                     {
-                        var item = new ListViewItem(new string[12] { listView1.Items.Count.ToString("X2"), "", "", "", "", "", "", "", "", "", "", "" });
+                        var item = new ListViewItem(new string[13] { listView1.Items.Count.ToString("X2"), "", "", "", "", "", "", "", "", "", "", "", "" });
                         listView1.Items.Add(item);
                     }
                     var curItem = listView1.Items[nv_recv];
@@ -78,15 +79,28 @@ namespace LonScan
                     curItem.SubItems[col++].Text = hex;
                     curItem.SubItems[col++].Text = value;
 
-                    if(Device.NvConfigTable.ContainsKey(nv_recv))
+                    if (Device.NvConfigTable.ContainsKey(nv_recv))
                     {
-                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Priority.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Bound ? "yes" : "no";
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Priority ? "yes" : "no";
                         curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Direction.ToString();
                         curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].NetVarSelector.ToString();
-                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Turnaround.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Turnaround ? "yes" : "no";
                         curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Service.ToString();
-                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Authenticated.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Secure ? "yes" : "no";
                         curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Address.ToString();
+
+                        if(Device.NvConfigTable[nv_recv].Bound)
+                        {
+                            if (Device.NvConfigTable[nv_recv].Direction == LonAPdu.LonAPduDirection.In)
+                            {
+                                curItem.BackColor = Color.LightGreen;
+                            }
+                            else
+                            {
+                                curItem.BackColor = Color.LightPink;
+                            }
+                        }
                     }
                     listView1.Items[nv_recv].Tag = nv_recv;
 

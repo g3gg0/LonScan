@@ -44,17 +44,24 @@ namespace LonScan
                 return;
             }
 
-            var pdu = LonPPdu.FromData(data, 0, data.Length);
-
-            txtTxDump.Text = BitConverter.ToString(pdu.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(pdu);
-
-            if (pdu.NPDU.Address.SourceNode != Network.SourceNode)
+            try
             {
-                txtRxDump.Text = "Please set source node to 0x" + Network.SourceNode.ToString("X2") + " (" + Network.SourceNode + ") else we will receive no reply.";
+                var pdu = LonPPdu.FromData(data, 0, data.Length);
+
+                txtTxDump.Text = BitConverter.ToString(pdu.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(pdu);
+
+                if (pdu.NPDU.Address.SourceNode != Network.SourceNode)
+                {
+                    txtRxDump.Text = "Please set source node to 0x" + Network.SourceNode.ToString("X2") + " (" + Network.SourceNode + ") else we will receive no reply.";
+                }
+                else
+                {
+                    txtRxDump.Text = "";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                txtRxDump.Text = "";
+                txtTxDump.Text = "Failed to parse packet";
             }
         }
 

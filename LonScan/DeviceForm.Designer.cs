@@ -40,7 +40,6 @@
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader12 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -50,6 +49,8 @@
             this.txtFirmwareVer = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.txtFirmwareProd = new System.Windows.Forms.TextBox();
+            this.columnHeader13 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader6a = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -65,20 +66,21 @@
             this.columnHeader3,
             this.columnHeader4,
             this.columnHeader5,
+            this.columnHeader6a,
             this.columnHeader6,
             this.columnHeader7,
             this.columnHeader8,
             this.columnHeader9,
             this.columnHeader10,
-            this.columnHeader11,
-            this.columnHeader12});
+            this.columnHeader12,
+            this.columnHeader13});
             this.listView1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listView1.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listView1.FullRowSelect = true;
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(0, 0);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(1056, 376);
+            this.listView1.Size = new System.Drawing.Size(1165, 376);
             this.listView1.TabIndex = 2;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
@@ -110,31 +112,28 @@
             // 
             // columnHeader6
             // 
-            this.columnHeader6.Text = "Cfg: Priority";
+            this.columnHeader6.Text = "Prio";
             // 
             // columnHeader7
             // 
-            this.columnHeader7.Text = "Cfg: Direction";
+            this.columnHeader7.Text = "Dir";
             // 
             // columnHeader8
             // 
-            this.columnHeader8.Text = "Cfg: NetVar";
+            this.columnHeader8.Text = "NetVar";
             // 
             // columnHeader9
             // 
-            this.columnHeader9.Text = "Cfg: Turnaround";
+            this.columnHeader9.Text = "Turn.";
             // 
             // columnHeader10
             // 
-            this.columnHeader10.Text = "Cfg: Service";
-            // 
-            // columnHeader11
-            // 
-            this.columnHeader11.Text = "Cfg: Authenticated";
+            this.columnHeader10.Text = "Service";
+            this.columnHeader10.Width = 67;
             // 
             // columnHeader12
             // 
-            this.columnHeader12.Text = "Cfg: Address Table Index";
+            this.columnHeader12.Text = "Secure";
             // 
             // splitContainer1
             // 
@@ -152,7 +151,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.listView1);
-            this.splitContainer1.Size = new System.Drawing.Size(1056, 512);
+            this.splitContainer1.Size = new System.Drawing.Size(1165, 512);
             this.splitContainer1.SplitterDistance = 132;
             this.splitContainer1.TabIndex = 3;
             // 
@@ -225,11 +224,19 @@
             this.txtFirmwareProd.TabIndex = 0;
             this.txtFirmwareProd.Text = "Fetching...";
             // 
+            // columnHeader13
+            // 
+            this.columnHeader13.Text = "Addr.";
+            // 
+            // columnHeader6a
+            // 
+            this.columnHeader6a.Text = "Bound";
+            // 
             // DeviceForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1056, 512);
+            this.ClientSize = new System.Drawing.Size(1165, 512);
             this.Controls.Add(this.splitContainer1);
             this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -265,8 +272,9 @@
         private System.Windows.Forms.ColumnHeader columnHeader8;
         private System.Windows.Forms.ColumnHeader columnHeader9;
         private System.Windows.Forms.ColumnHeader columnHeader10;
-        private System.Windows.Forms.ColumnHeader columnHeader11;
         private System.Windows.Forms.ColumnHeader columnHeader12;
+        private System.Windows.Forms.ColumnHeader columnHeader13;
+        private System.Windows.Forms.ColumnHeader columnHeader6a;
     }
 }
 

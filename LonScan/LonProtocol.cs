@@ -741,14 +741,14 @@ namespace LonScan
 
         public class NvConfig
         {
-            public uint Priority;
+            public bool Priority;
             public LonAPduDirection Direction;
             public uint NetVarSelector;
-            public bool Unbound;
+            public bool Bound;
 
-            public uint Turnaround;
+            public bool Turnaround;
             public uint Service;
-            public uint Authenticated;
+            public bool Secure;
             public uint Address;
 
             public static NvConfig FromData(byte[] data, int offset = 0)
@@ -757,12 +757,12 @@ namespace LonScan
 
                 ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(14), new BitInfo(1), new BitInfo(2), new BitInfo(1), new BitInfo(4));
 
-                (config.Priority, config.Direction, config.NetVarSelector, config.Turnaround, config.Service, config.Authenticated, config.Address) = ((uint)values[0], (LonAPduDirection)values[1], (uint)values[2], (uint)values[3], (uint)values[4], (uint)values[5], (uint)values[6]);
+                (config.Priority, config.Direction, config.NetVarSelector, config.Turnaround, config.Service, config.Secure, config.Address) = (values[0]==1, (LonAPduDirection)values[1], (uint)values[2], values[3] == 1, (uint)values[4], values[5] == 1, (uint)values[6]);
 
-                config.Unbound = config.NetVarSelector > 0x1FFF;
-                if(config.Unbound)
+                config.Bound = config.NetVarSelector < 0x1FFF;
+                if (!config.Bound)
                 {
-                    config.NetVarSelector = 0x3FFF-config.NetVarSelector;
+                    config.NetVarSelector = 0x3FFF - config.NetVarSelector;
                 }
 
                 return config;
@@ -770,7 +770,7 @@ namespace LonScan
 
             public override string ToString()
             {
-                return "Prio: " + Priority + ", Dir: " + Direction + " Selector: " + NetVarSelector.ToString().PadLeft(4) + " (" + (Unbound?"UnBound":"Bound  ") + ") Turn: " + Turnaround + " Service: " + Service + " Auth: " + Authenticated + " AddrTbl: " + Address;
+                return "Prio: " + Priority + ", Dir: " + Direction + " Selector: " + NetVarSelector.ToString().PadLeft(4) + " (" + (Bound?"UnBound":"Bound  ") + ") Turn: " + Turnaround + " Service: " + Service + " Auth: " + Secure + " AddrTbl: " + Address;
             }
         }
 
