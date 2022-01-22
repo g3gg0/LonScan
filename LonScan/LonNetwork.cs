@@ -49,8 +49,9 @@ namespace LonScan
         /// <param name="response">callback to be called upon a response</param>
         /// <param name="waitTime">time to wait for the response in ms, 0 = wait forever, -1 = do not wait at all</param>
         /// <returns>Returns true when a response arrived in time, false when waiting timed out.</returns>
-        public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = 2000)
+        public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = 1000)
         {
+            int maxTries = 3;
             int trans;
 
             while (PendingRequests.Count > 0)
@@ -62,57 +63,60 @@ namespace LonScan
                 }
             }
 
-            lock (PendingRequests)
-            {
-                trans = NextTransaction;
-
-                NextTransaction++;
-                NextTransaction %= 8;
-
-                if (waitTime > 0)
-                {
-                    PendingRequests.Add(trans, response);
-                }
-            }
-
-            /* replace transaction ID */
-            if (pdu.NPDU.PDU is LonTransPdu lonpdu)
-            {
-                lonpdu.TransNo = (uint)trans;
-            }
-
-            /* update source subnet/address if needed */
-            if (pdu.NPDU.Address.SourceSubnet == -1)
-            {
-                pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
-            }
-            if (pdu.NPDU.Address.SourceNode == -1)
-            {
-                pdu.NPDU.Address.SourceNode = Config.SourceNode;
-            }
-
-            SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
-
-            DateTime start = DateTime.Now;
-
-            if (waitTime > 0)
+            for (int retry = 0; retry < maxTries; retry++)
             {
                 lock (PendingRequests)
                 {
-                    while ((DateTime.Now - start).TotalMilliseconds < waitTime || waitTime == 0)
-                    {
-                        Monitor.Wait(PendingRequests, 50);
+                    trans = NextTransaction;
 
-                        if (!PendingRequests.ContainsKey(trans))
-                        {
-                            return true;
-                        }
-                        if (Stopped)
-                        {
-                            return false;
-                        }
+                    NextTransaction++;
+                    NextTransaction %= 8;
+
+                    if (waitTime > 0)
+                    {
+                        PendingRequests.Add(trans, response);
                     }
-                    PendingRequests.Remove(trans);
+                }
+
+                /* replace transaction ID */
+                if (pdu.NPDU.PDU is LonTransPdu lonpdu)
+                {
+                    lonpdu.TransNo = (uint)trans;
+                }
+
+                /* update source subnet/address if needed */
+                if (pdu.NPDU.Address.SourceSubnet == -1)
+                {
+                    pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
+                }
+                if (pdu.NPDU.Address.SourceNode == -1)
+                {
+                    pdu.NPDU.Address.SourceNode = Config.SourceNode;
+                }
+
+                SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
+
+                DateTime start = DateTime.Now;
+
+                if (waitTime > 0)
+                {
+                    lock (PendingRequests)
+                    {
+                        while ((DateTime.Now - start).TotalMilliseconds < (waitTime/maxTries) || waitTime == 0)
+                        {
+                            Monitor.Wait(PendingRequests, 50);
+
+                            if (!PendingRequests.ContainsKey(trans))
+                            {
+                                return true;
+                            }
+                            if (Stopped)
+                            {
+                                return false;
+                            }
+                        }
+                        PendingRequests.Remove(trans);
+                    }
                 }
             }
 

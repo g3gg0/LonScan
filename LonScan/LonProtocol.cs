@@ -739,7 +739,7 @@ namespace LonScan
             return pdu;
         }
 
-        public class NVConfig
+        public class NvConfig
         {
             public uint Priority;
             public LonAPduDirection Direction;
@@ -751,9 +751,9 @@ namespace LonScan
             public uint Authenticated;
             public uint Address;
 
-            public static NVConfig FromData(byte[] data, int offset = 0)
+            public static NvConfig FromData(byte[] data, int offset = 0)
             {
-                NVConfig config = new NVConfig();
+                NvConfig config = new NvConfig();
 
                 ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(14), new BitInfo(1), new BitInfo(2), new BitInfo(1), new BitInfo(4));
 
@@ -777,8 +777,8 @@ namespace LonScan
 
         public enum LonAPduDirection
         {
-            Incoming = 0,
-            Outgoing = 1
+            In = 0,
+            Out = 1
         }
 
         public enum LonAPduType

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -24,11 +25,44 @@ namespace LonScan
             Text = "Device view: " + device.Name + " (Address " + device.Address + ")";
             Device = device;
 
+            for(int nv = 0; nv <= Device.Config.NvMap.Keys.Max(); nv++)
+            {
+                ListViewItem item;
+
+                if (Device.Config.NvMap.ContainsKey(nv))
+                {
+                    item = new ListViewItem(new string[12] { nv.ToString("X2"), Device.Config.NvMap[nv].Name, Device.Config.NvMap[nv].Description, "", "", "", "", "", "", "", "", "" });
+                }
+                else
+                {
+                    item = new ListViewItem(new string[12] { nv.ToString("X2"), "(unused)", "", "", "", "", "", "", "", "", "", "" });
+                }
+                listView1.Items.Add(item);
+            }
+
             Device.OnNvUpdate += OnNvUpdate;
+            Device.OnUpdate += OnUpdate;
             Device.StartNvScan();
         }
 
-        private void OnNvUpdate(LonDevice device, int nv_recv, string name, string desc, string hex, string value)
+        private void OnUpdate(LonDevice device)
+        {
+            try
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    txtFirmwareDate.Text = Device.ConfigDate;
+                    txtFirmwareVer.Text = Device.ConfigVersion;
+                    txtFirmwareProd.Text = Device.ConfigProduct;
+                }));
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
+        private void OnNvUpdate(LonDevice device, int nv_recv, string hex, string value)
         {
             try
             {
@@ -36,17 +70,28 @@ namespace LonScan
                 {
                     while (listView1.Items.Count <= nv_recv)
                     {
-                        listView1.Items.Add(listView1.Items.Count.ToString("X2"));
-                        listView1.Items[listView1.Items.Count - 1].SubItems.Add("");
-                        listView1.Items[listView1.Items.Count - 1].SubItems.Add("");
-                        listView1.Items[listView1.Items.Count - 1].SubItems.Add("");
-                        listView1.Items[listView1.Items.Count - 1].SubItems.Add("");
+                        var item = new ListViewItem(new string[12] { listView1.Items.Count.ToString("X2"), "", "", "", "", "", "", "", "", "", "", "" });
+                        listView1.Items.Add(item);
                     }
-                    listView1.Items[nv_recv].SubItems[1].Text = name;
-                    listView1.Items[nv_recv].SubItems[2].Text = desc;
-                    listView1.Items[nv_recv].SubItems[3].Text = hex;
-                    listView1.Items[nv_recv].SubItems[4].Text = value;
+                    var curItem = listView1.Items[nv_recv];
+                    int col = 3;
+                    curItem.SubItems[col++].Text = hex;
+                    curItem.SubItems[col++].Text = value;
+
+                    if(Device.NvConfigTable.ContainsKey(nv_recv))
+                    {
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Priority.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Direction.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].NetVarSelector.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Turnaround.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Service.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Authenticated.ToString();
+                        curItem.SubItems[col++].Text = Device.NvConfigTable[nv_recv].Address.ToString();
+                    }
                     listView1.Items[nv_recv].Tag = nv_recv;
+
+                    listView1.SelectedIndices.Clear();
+                    listView1.SelectedIndices.Add(nv_recv);
                 }));
             }
             catch (Exception)

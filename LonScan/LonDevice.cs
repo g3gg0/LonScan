@@ -1,5 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
+using System.Text;
 using System.Threading;
 
 namespace LonScan
@@ -9,17 +12,22 @@ namespace LonScan
         public readonly string Name;
         public readonly int Address;
         public LonDeviceConfig Config;
+        public Dictionary<int, LonAPdu.NvConfig> NvConfigTable = new Dictionary<int, LonAPdu.NvConfig>();
 
-        [JsonIgnore]
         public readonly LonNetwork Network;
-        [JsonIgnore]
         private bool ThreadStop;
-        [JsonIgnore]
         private Thread ScanThread = null;
 
-        public delegate void NvUpdateCallback(LonDevice device, int nv, string name, string desc, string hex, string value);
+        public delegate void NvUpdateCallback(LonDevice device, int nv, string hex, string value);
         public event NvUpdateCallback OnNvUpdate;
+        public delegate void UpdateCallback(LonDevice device);
+        public event UpdateCallback OnUpdate;
 
+        public byte[] ConfigMem = new byte[0x30];
+
+        public string ConfigVersion;
+        public string ConfigDate;
+        public string ConfigProduct;
 
         public LonDevice(string name, int address, LonNetwork network, LonDeviceConfig config)
         {
@@ -28,20 +36,64 @@ namespace LonScan
             Network = network;
             Config = config;
 
-            OnNvUpdate += LonDevice_OnNvUpdate;
+            OnNvUpdate += (d, n, h, v) => { };
+            OnUpdate += (d) => { };
         }
 
-        private void LonDevice_OnNvUpdate(LonDevice device, int nv, string name, string desc, string hex, string value)
-        {
-        }
 
         public void StartNvScan()
         {
             ThreadStop = false;
             ScanThread = new Thread(() =>
             {
+                bool versionFetched = false;
+
                 while (true)
                 {
+                    if(!versionFetched)
+                    {
+                        for (uint addr = 0; addr < ConfigMem.Length; addr += 0x10)
+                        {
+                            LonPPdu pdu = new LonPPdu
+                            {
+                                NPDU = new LonNPdu
+                                {
+                                    Address = new LonAddressNode
+                                    {
+                                        SourceSubnet = -1,
+                                        SourceNode = -1, /* automatically set */
+                                        DestinationSubnet = 1,
+                                        DestinationNode = (uint)Address
+                                    },
+                                    DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                                    Domain = 0x54,
+                                    PDU = new LonSPdu
+                                    {
+                                        SPDUType = LonSPdu.LonSPduType.Request,
+                                        APDU = LonAPduNetworkManagement.GenerateNMMemoryRead(0, 0x4000 + addr, 0x10)
+                                    }
+                                }
+                            };
+                            bool success = Network.SendMessage(pdu, (p) =>
+                            {
+                                LonSPdu spdu = (p.NPDU.PDU as LonSPdu);
+                                if (spdu != null && spdu.APDU is LonAPduGenericApplication)
+                                {
+                                    LonAPduGenericApplication apdu = (spdu.APDU as LonAPduGenericApplication);
+
+                                    /* mem read successful */
+                                    if((apdu.Code & 0x20) != 0 && (apdu.Code & 0x1F) == (int)LonAPduNetworkManagement.LonAPduNMType.ReadMemory && apdu.Payload.Length == 0x10)
+                                    {
+                                        Array.Copy(apdu.Payload, 0, ConfigMem, addr, 0x10);
+                                    }
+                                }
+                            });
+                        }
+
+                        versionFetched = true;
+                        UpdateConfigStrings();
+                    }
+
                     foreach (var info in Config.NvMap)
                     {
                         int nvIndex = info.Key;
@@ -49,6 +101,50 @@ namespace LonScan
                         if (ThreadStop)
                         {
                             return;
+                        }
+
+                        if(!NvConfigTable.ContainsKey(nvIndex))
+                        {
+                            LonPPdu nvpdu = new LonPPdu
+                            {
+                                NPDU = new LonNPdu
+                                {
+                                    Address = new LonAddressNode
+                                    {
+                                        SourceSubnet = -1,
+                                        SourceNode = -1, /* automatically set */
+                                        DestinationSubnet = 1,
+                                        DestinationNode = (uint)Address
+                                    },
+                                    DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                                    Domain = 0x54,
+                                    PDU = new LonSPdu
+                                    {
+                                        SPDUType = LonSPdu.LonSPduType.Request,
+                                        APDU = new LonAPduNetworkManagement
+                                        {
+                                            Code = LonAPdu.LonAPduNMType.QueryNetworkVariableConfig,
+                                            Data = new byte[] { (byte)nvIndex }
+                                        }
+                                    }
+                                }
+                            };
+
+                            Network.SendMessage(nvpdu, (p) =>
+                            {
+                                LonSPdu spdu = (p.NPDU.PDU as LonSPdu);
+                                if (spdu != null && spdu.APDU is LonAPduGenericApplication)
+                                {
+                                    LonAPduGenericApplication apdu = (spdu.APDU as LonAPduGenericApplication);
+
+                                    /* mem read successful */
+                                    if ((apdu.Code & 0x20) != 0 && (apdu.Code & 0x1F) == (int)LonAPduNetworkManagement.LonAPduNMType.QueryNetworkVariableConfig)
+                                    {
+                                        LonAPdu.NvConfig cfg = LonAPdu.NvConfig.FromData(apdu.Data);
+                                        NvConfigTable.Add(nvIndex, cfg);
+                                    }
+                                }
+                            });
                         }
                         
                         LonPPdu pdu = new LonPPdu
@@ -148,6 +244,40 @@ namespace LonScan
             ScanThread.Start();
         }
 
+        private void UpdateConfigStrings()
+        {
+            int pos = 3;
+
+            ConfigVersion = GetString(ConfigMem, ref pos);
+            ConfigDate = GetString(ConfigMem, ref pos);
+            ConfigProduct = GetString(ConfigMem, ref pos);
+
+            OnUpdate(this);
+        }
+
+        private string GetString(byte[] buf, ref int pos)
+        {
+            int length = 0;
+
+            for(int lenChk = pos; lenChk < buf.Length; lenChk++)
+            {
+                if(buf[lenChk] == 0)
+                {
+                    break;
+                }
+                length++;
+            }
+
+            byte[] strBuf = new byte[length];
+            Array.Copy(buf, pos, strBuf, 0, length);
+
+            pos += length + 1;
+
+            string str = Encoding.ASCII.GetString(strBuf);
+
+            return str;
+        }
+
         public void StopNvScan()
         {
             if (ScanThread != null)
@@ -195,7 +325,7 @@ namespace LonScan
 
             string value = LonStandardTypes.ToString(apdu.Data, 1, apdu.Data.Length - 1, info.Type);
 
-            OnNvUpdate(this, nv_recv, info.Name, info.Description, hex, value);
+            OnNvUpdate(this, nv_recv, hex, value);
         }
     }
 }
