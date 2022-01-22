@@ -17,6 +17,10 @@ namespace LonScan
         public int RemoteSendPort = 3334;
         public int SourceSubnet = 1;
         public int SourceNode = 126;
+        public int PacketRetries = 3;
+
+        public List<string> PacketForgeTemplates = new List<string>();
+        public int PacketForgeTimeout = 1000;
 
         public LonDeviceConfig[] DeviceConfigs = new LonDeviceConfig[]
         {
@@ -209,9 +213,6 @@ namespace LonScan
                 }
             }
         };
-
-        public List<string> PacketForgeTemplates = new List<string>() ;
-        public int PacketForgeTimeout = 500;
 
         internal void AddDeviceConfig(LonDeviceConfig xif)
         {

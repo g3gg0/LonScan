@@ -51,17 +51,8 @@ namespace LonScan
         /// <returns>Returns true when a response arrived in time, false when waiting timed out.</returns>
         public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = 1000)
         {
-            int maxTries = 3;
+            int maxTries = Config.PacketRetries;
             int trans;
-
-            while (PendingRequests.Count > 0)
-            {
-                Thread.Sleep(100);
-                if (Stopped)
-                {
-                    return false;
-                }
-            }
 
             for (int retry = 0; retry < maxTries; retry++)
             {
@@ -76,33 +67,30 @@ namespace LonScan
                     {
                         PendingRequests.Add(trans, response);
                     }
-                }
 
-                /* replace transaction ID */
-                if (pdu.NPDU.PDU is LonTransPdu lonpdu)
-                {
-                    lonpdu.TransNo = (uint)trans;
-                }
-
-                /* update source subnet/address if needed */
-                if (pdu.NPDU.Address.SourceSubnet == -1)
-                {
-                    pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
-                }
-                if (pdu.NPDU.Address.SourceNode == -1)
-                {
-                    pdu.NPDU.Address.SourceNode = Config.SourceNode;
-                }
-
-                SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
-
-                DateTime start = DateTime.Now;
-
-                if (waitTime > 0)
-                {
-                    lock (PendingRequests)
+                    /* replace transaction ID */
+                    if (pdu.NPDU.PDU is LonTransPdu lonpdu)
                     {
-                        while ((DateTime.Now - start).TotalMilliseconds < (waitTime/maxTries) || waitTime == 0)
+                        lonpdu.TransNo = (uint)trans;
+                    }
+
+                    /* update source subnet/address if needed */
+                    if (pdu.NPDU.Address.SourceSubnet == -1)
+                    {
+                        pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
+                    }
+                    if (pdu.NPDU.Address.SourceNode == -1)
+                    {
+                        pdu.NPDU.Address.SourceNode = Config.SourceNode;
+                    }
+
+                    SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
+
+                    DateTime start = DateTime.Now;
+
+                    if (waitTime > 0)
+                    {
+                        while ((DateTime.Now - start).TotalMilliseconds < (waitTime / maxTries) || waitTime == 0)
                         {
                             Monitor.Wait(PendingRequests, 50);
 

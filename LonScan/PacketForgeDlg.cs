@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -80,33 +81,44 @@ namespace LonScan
         {
             byte[] data = GetBytes();
 
-            if(cmbFrameBytes.Text.Contains("#"))
+            if (cmbFrameBytes.Text.Contains("#"))
             {
                 SaveSequence(cmbFrameBytes.Text);
             }
-
             cmbFrameBytes.Text = BitConverter.ToString(data).Replace("-", " ");
 
-            var pdu = LonPPdu.FromData(data, 0, data.Length);
-            bool wait = pdu.NPDU.Address.SourceNode == Network.SourceNode;
 
-            if(wait)
+            Thread t = new Thread(() =>
             {
-                txtRxDump.Text = "(Waiting " + Config.PacketForgeTimeout + "ms for response...)";
-            }
+                var pdu = LonPPdu.FromData(data, 0, data.Length);
+                bool wait = pdu.NPDU.Address.SourceNode == Network.SourceNode;
 
-            bool success = Network.SendMessage(pdu, (r) =>
-            {
-                BeginInvoke(new Action(() =>
+                if (wait)
                 {
-                    txtRxDump.Text = BitConverter.ToString(r.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(r);
-                }));
-            }, wait ? Config.PacketForgeTimeout : -1);
+                    BeginInvoke(new Action(() =>
+                    {
+                        txtRxDump.Text = "(Waiting " + Config.PacketForgeTimeout + "ms for response...)";
+                    }));
+                }
 
-            if (!success)
-            {
-                txtRxDump.Text = "(Response timed out)";
-            }
+                bool success = Network.SendMessage(pdu, (r) =>
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        txtRxDump.Text = BitConverter.ToString(r.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(r);
+                    }));
+                }, wait ? Config.PacketForgeTimeout : -1);
+
+                if (!success)
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        txtRxDump.Text = "(Response timed out)";
+                    }));
+                }
+            });
+
+            t.Start();
         }
 
         private void SaveSequence(string text)
