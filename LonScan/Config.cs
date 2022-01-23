@@ -26,6 +26,7 @@ namespace LonScan
 
         public LonDeviceConfig[] DeviceConfigs = new LonDeviceConfig[]
         {
+            /*
             new LonDeviceConfig()
             {
                 Name = "WVF",
@@ -80,11 +81,12 @@ namespace LonScan
                     new NvInfo("WVF_nvoMode        ", "                 ", "SNVT_hvac_mode"),
                     new NvInfo("SYS_pack           ", "                 ", "")
                 }
-            },
+            },*/
             new LonDeviceConfig()
             {
                 Name = "UML C1",
                 Addresses = new []{ 10, 11 },
+                ProgramId = "90010010010A0588",
                 NvInfos = new NvInfo[]
                 {
                     new NvInfo("nviRequest         ", "                 ", "SNVT_obj_request"),
@@ -144,10 +146,10 @@ namespace LonScan
                     new NvInfo("FA_nviExtTsoll     ", "                 ", "SNVT_temp_p"),
                     new NvInfo("SYS_pack           ", "                 ", ""),
                 }
-            },
+            }/*,
             new LonDeviceConfig()
             {
-                // cat PMX_A3_V270.XIF | grep VAR -A3 | tr '\r' ';' | tr '\n' ' ' | sed "s/--/\n/g;" | sed "s/^ *//g" | cut -d ' ' -f 3,2,21
+                // cat PMX_A3_V270.XIF | grep VAR -A3 | tr '\r' ';' | tr '\n' ' ' | sed "s/--/\n/g;" | sed "s/^ * //g" | cut -d ' ' -f 3,2,21
                 Name = "PMX150",
                 Addresses = new []{ 60 },
                 NvInfos = new NvInfo[]
@@ -213,7 +215,7 @@ namespace LonScan
                     new NvInfo("HW_nviDigInput   ", "                 ", ""),
                     new NvInfo("HW_nviDigOutput  ", "                 ", "")
                 }
-            }
+            }*/
         };
 
         internal void AddDeviceConfig(LonDeviceConfig xif)

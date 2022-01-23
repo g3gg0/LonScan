@@ -5,8 +5,8 @@ namespace LonScan
 {
     public class NvInfo
     {
-        public string Name;
-        public string Description;
+        public string Name = "";
+        public string Description = "";
         public string LonType
         {
             get => Type.Name;
@@ -15,6 +15,9 @@ namespace LonScan
                 Type = LonStandardTypes.Get(value);
             }
         }
+        public string SelfDoc = "";
+
+
         internal LonStandardTypes.LonType Type;
 
         public NvInfo()
@@ -43,12 +46,15 @@ namespace LonScan
     public class LonDeviceConfig
     {
         [JsonProperty(Order = 1)]
-        public string Name { get; set; }
+        public string Name = "";
 
         [JsonProperty(Order = 2)]
-        public int[] Addresses { get; set; }
-
+        public int[] Addresses = new int[0];
         [JsonProperty(Order = 3)]
+        public string ProgramId;
+        [JsonProperty(Order = 4)]
+        public string SelfDoc = "";
+        [JsonProperty(Order = 5)]
         public Dictionary<int, NvInfo> NvMap = new Dictionary<int, NvInfo>();
 
         internal NvInfo[] NvInfos

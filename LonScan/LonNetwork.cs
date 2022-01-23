@@ -99,7 +99,7 @@ namespace LonScan
 
                     } while (PendingRequests.ContainsKey(trans));
 
-                    if (waitTime > 0)
+                    if (waitTime >= 0)
                     {
                         PendingRequests.Add(trans, response);
                     }
@@ -115,7 +115,7 @@ namespace LonScan
                     SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
 
                     var sendTime = LastPacket;
-                    if (waitTime > 0)
+                    if (waitTime >= 0)
                     {
                         while ((DateTime.Now - sendTime).TotalMilliseconds < (waitTime / maxTries) || waitTime == 0)
                         {

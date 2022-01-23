@@ -11,37 +11,42 @@ namespace LonScan
     public class XifFile
     {
         public string DeviceName = "(undefined)";
+        public string ProgramId = "(undefined)";
+        public string SelfDoc = "(undefined)";
         public List<XifTag> Tags = new List<XifTag>();
         public List<XifVar> Vars = new List<XifVar>();
 
         private XifLineReader Reader;
 
-
         public XifFile(string file)
         {
             Reader = new XifLineReader(file);
-            DeviceName = new FileInfo(file).Name; 
+            DeviceName = new FileInfo(file).Name;
 
 
             /* ignore first 11 lines */
-            for (int line = 1; line < 11; line++)
+            for (int line = 1; line < 5; line++)
+            {
+                Reader.ReadLine();
+            }
+            ProgramId = Reader.ReadLine().Replace(":", "");
+            for (int line = 6; line < 11; line++)
             {
                 Reader.ReadLine();
             }
 
-            if(Reader.CurrentLine != "*")
+            if (Reader.CurrentLine != "*")
             {
                 Console.WriteLine("Failed to read");
                 return;
             }
             Reader.ReadLine();
 
-            string selfDoc = ReadSelfDoc();
-            Console.WriteLine("selfDoc: '" + selfDoc + "'");
+            SelfDoc = ReadSelfDoc();
 
-            if(!string.IsNullOrEmpty(selfDoc))
+            if(!string.IsNullOrEmpty(SelfDoc))
             {
-                string[] fields = selfDoc.Split(';');
+                string[] fields = SelfDoc.Split(';');
                 if(fields.Length > 1)
                 {
                     DeviceName = fields.Last();
@@ -91,17 +96,17 @@ namespace LonScan
 
         public class XifTag
         {
-            public string Name;
-            public string Index;
-            public string AvgRate;
-            public string MaxRate;
+            public string Name = "";
+            public string Index = "";
+            public string AvgRate = "";
+            public string MaxRate = "";
 
-            public string BindFlag;
+            public string BindFlag = "";
         }
 
         public class XifVar
         {
-            public string Name;
+            public string Name = "";
             public int Index;
             public int AvgRate;
             public int MaxRate;
@@ -109,13 +114,9 @@ namespace LonScan
             public bool TakeOffline;
             public bool Input;
             public bool Output => !Input;
-
-            public string SelfDoc;
-
-
+            public string SelfDoc = "";
             public int SnvtIndex;
-
-            public string BindFlag;
+            public string BindFlag = "";
 
             public List<XifVarStructure> Structure = new List<XifVarStructure>();
 
@@ -160,16 +161,13 @@ namespace LonScan
             var.MaxRate = int.Parse(maxRate);
             var.ArraySize = int.Parse(arraySize);
 
-
             var (takeOffline, _, _, dir, serviceType, _) = Reader.ReadLine().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
             var.TakeOffline = takeOffline == "1";
             var.Input = dir == "0";
-
             var.SelfDoc = ReadSelfDoc();
 
             var (svnt, _, elements, _) = Reader.ReadLine().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
 
             var.SnvtIndex = int.Parse(svnt);
 
@@ -258,10 +256,12 @@ namespace LonScan
 
             cfg.Name = DeviceName;
             cfg.Addresses = new int[0];
+            cfg.ProgramId = ProgramId;
+            cfg.SelfDoc = SelfDoc;
 
-            foreach(var v in Vars)
+            foreach (var v in Vars)
             {
-                cfg.NvMap.Add(v.Index, new NvInfo { Name = v.Name, Type = LonStandardTypes.Get(v.SnvtIndex)  });
+                cfg.NvMap.Add(v.Index, new NvInfo { Name = v.Name, Type = LonStandardTypes.Get(v.SnvtIndex), SelfDoc = v.SelfDoc });
             }
 
             return cfg;
