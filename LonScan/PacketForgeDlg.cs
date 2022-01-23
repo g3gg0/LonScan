@@ -104,7 +104,7 @@ namespace LonScan
                 {
                     BeginInvoke(new Action(() =>
                     {
-                        txtRxDump.Text = "(Waiting " + Config.PacketForgeTimeout + "ms for response...)";
+                        txtRxDump.Text = "(Waiting " + Config.PacketTimeout + "ms for response...)";
                     }));
                 }
 
@@ -114,7 +114,7 @@ namespace LonScan
                     {
                         txtRxDump.Text = BitConverter.ToString(r.FrameBytes).Replace("-", " ") + Environment.NewLine + Environment.NewLine + PacketForge.ToString(r);
                     }));
-                }, wait ? Config.PacketForgeTimeout : -1);
+                }, wait ? Config.PacketTimeout : -1);
 
                 if (!success)
                 {

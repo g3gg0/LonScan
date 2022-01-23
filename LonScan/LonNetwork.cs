@@ -23,6 +23,7 @@ namespace LonScan
         private bool Stopped;
         internal Action<LonPPdu> OnReceive;
         internal int SourceNode => Config.SourceNode;
+        internal DateTime LastPacket = DateTime.Now;
 
         public LonNetwork(Config config)
         {
@@ -49,16 +50,28 @@ namespace LonScan
         /// <param name="response">callback to be called upon a response</param>
         /// <param name="waitTime">time to wait for the response in ms, 0 = wait forever, -1 = do not wait at all</param>
         /// <returns>Returns true when a response arrived in time, false when waiting timed out.</returns>
-        public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = 1000)
+        public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = -2)
         {
             int maxTries = Config.PacketRetries;
             int trans;
+
+            if(waitTime == -2)
+            {
+                waitTime = Config.PacketTimeout;
+            }
 
             for (int retry = 0; retry < maxTries; retry++)
             {
                 lock (PendingRequests)
                 {
                     trans = NextTransaction;
+
+                    /* delay transmission to prevent flooding */
+                    while ((DateTime.Now - LastPacket).TotalMilliseconds < Config.PacketDelay)
+                    {
+                        Thread.Sleep(5);
+                    }
+                    LastPacket = DateTime.Now;
 
                     NextTransaction++;
                     NextTransaction %= 8;
@@ -92,7 +105,7 @@ namespace LonScan
                     {
                         while ((DateTime.Now - start).TotalMilliseconds < (waitTime / maxTries) || waitTime == 0)
                         {
-                            Monitor.Wait(PendingRequests, 50);
+                            Monitor.Wait(PendingRequests, 10);
 
                             if (!PendingRequests.ContainsKey(trans))
                             {
