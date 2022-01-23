@@ -1,7 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 
 /*
@@ -20,6 +22,8 @@ namespace LonScan
     {
         public LonNetwork Network;
         public Config Config;
+        private Thread LatencyThread;
+        private bool Exiting = false;
 
         public LonScannerMain()
         {
@@ -29,6 +33,87 @@ namespace LonScan
 
             Network = new LonNetwork(Config);
             Network.Start();
+
+            LatencyThread = new Thread(LatencyThreadMain);
+            LatencyThread.Start();
+        }
+
+        private void LatencyThreadMain()
+        {
+            while (!Exiting)
+            {
+                long unixTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+                LonPPdu pdu = new LonPPdu
+                {
+                    NPDU = new LonNPdu
+                    {
+                        Address = new LonAddressNode
+                        {
+                            SourceSubnet = Config.SourceSubnet,
+                            SourceNode = Config.SourceNode,
+                            DestinationSubnet = Config.SourceSubnet,
+                            DestinationNode = Config.SourceNode
+                        },
+                        DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                        Domain = 0x54,
+                        PDU = new LonSPdu
+                        {
+                            SPDUType = LonSPdu.LonSPduType.Response,
+                            APDU = new LonAPduGenericApplication
+                            {
+                                Code = 1,
+                                Data = BitConverter.GetBytes(unixTime)
+                            }
+                        }
+                    }
+                };
+
+                double latency = -1;
+
+                bool success = Network.SendMessage(pdu, (p) =>
+                {
+                    if (!(p.NPDU.PDU is LonSPdu spdu))
+                    {
+                        return;
+                    }
+
+                    if (!(spdu.APDU is LonAPduGenericApplication apdu) || apdu.Code != 1 || apdu.Data.Length != 8)
+                    {
+                        return;
+                    }
+
+                    long ts = BitConverter.ToInt64(apdu.Data, 0);
+                    DateTimeOffset ofs = DateTimeOffset.FromUnixTimeMilliseconds(ts);
+
+                    TimeSpan delta = DateTimeOffset.Now - ofs;
+                    latency = delta.TotalMilliseconds;
+
+                }, Config.LatencyCheckTime, 1);
+
+                Thread.Sleep(Config.LatencyCheckTime);
+
+                int loss = (Network.PacketsTimedOut * 100) / Network.PacketsSent;
+                string latStr = "-timeout-";
+                if (latency > 0)
+                {
+                    latStr = latency.ToString("0") + " ms";
+                }
+                string stats = "Latency: " + latStr + ", " + loss + "% loss, Sent: " + Network.PacketsSent + " Received: " + Network.PacketsReceived + " Timeouts: " + Network.PacketsTimedOut;
+
+                Color col = Color.Black;
+
+                if (loss > 20 || latency > Config.PacketTimeout / Config.PacketRetries)
+                {
+                    col = Color.Red;
+                }
+
+                BeginInvoke(new Action(() =>
+                {
+                    toolStripLatency.Text = stats;
+                    toolStripLatency.ForeColor = col;
+                }));
+            }
         }
 
         private void LoadConfig()
@@ -51,7 +136,9 @@ namespace LonScan
 
         protected override void OnClosing(CancelEventArgs e)
         {
+            Exiting = true;
             Network.Stop();
+            LatencyThread.Join();
             base.OnClosing(e);
         }
 
@@ -109,7 +196,7 @@ namespace LonScan
 
         internal void AddDevice(LonDevice dev)
         {
-            DeviceForm form = new DeviceForm(dev) {  MdiParent = this };
+            DeviceForm form = new DeviceForm(dev) { MdiParent = this };
             form.Show();
         }
 
@@ -173,7 +260,7 @@ namespace LonScan
         {
             //string msg = "01 09 01 DA 01 8F 54 01 0E 25 06 23 06 02 C8 00 40 95 03 CD 63";
             //string msg = "01 19 01 DA 01 8F 54 0F 0E 24 06 21 04 02 C8 00 40";
-            string msg =   "01 19 01 DA 01 8F 54 0F 0B 02 01";
+            string msg = "01 19 01 DA 01 8F 54 0F 0B 02 01";
             byte[] data = msg.Split(' ').Select(b => Convert.ToByte(b, 16)).ToArray();
 
             var pdu = LonPPdu.FromData(data, 0, data.Length);
@@ -226,15 +313,15 @@ namespace LonScan
             dlg.RestoreDirectory = true;
             dlg.Multiselect = true;
 
-            if(dlg.ShowDialog() == DialogResult.OK)
+            if (dlg.ShowDialog() == DialogResult.OK)
             {
-                foreach(string s in dlg.FileNames)
+                foreach (string s in dlg.FileNames)
                 {
                     try
                     {
                         XifFile xif = new XifFile(s);
 
-                        if(Config.DeviceConfigs.Any(c => c.Name == xif.DeviceName))
+                        if (Config.DeviceConfigs.Any(c => c.Name == xif.DeviceName))
                         {
                             continue;
                         }

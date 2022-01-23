@@ -131,7 +131,7 @@ namespace LonScan
                                 SourceSubnet = 1,
                                 SourceNode = 126,
                                 DestinationSubnet = 1,
-                                DestinationNode = (uint)Address
+                                DestinationNode = Address
                             },
 
                             DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,

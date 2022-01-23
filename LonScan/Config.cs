@@ -20,6 +20,7 @@ namespace LonScan
         public int PacketRetries = 3;
         public int PacketTimeout = 1000;
         public int PacketDelay = 100;
+        public int LatencyCheckTime = 500;
 
         public List<string> PacketForgeTemplates = new List<string>();
 

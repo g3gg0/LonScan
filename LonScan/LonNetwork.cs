@@ -12,18 +12,21 @@ namespace LonScan
         private Thread ReceiveThread;
 
         public delegate void ResponseCallback(LonPPdu ppdu);
-        private int NextTransaction = 0;
-        private Dictionary<int, ResponseCallback> PendingRequests = new Dictionary<int, ResponseCallback>();
-        private readonly string RemoteAddress;
-        private Config Config;
+        private readonly Dictionary<int, ResponseCallback> PendingRequests = new Dictionary<int, ResponseCallback>();
+        private readonly Config Config;
         private readonly IPAddress Remote;
         private readonly IPEndPoint RemoteEndpoint;
         private readonly Socket SendSocket;
         private readonly UdpClient ReceiveClient;
+        private int NextTransaction = 0;
         private bool Stopped;
         internal Action<LonPPdu> OnReceive;
         internal int SourceNode => Config.SourceNode;
         internal DateTime LastPacket = DateTime.Now;
+
+        public int PacketsSent;
+        public int PacketsReceived;
+        public int PacketsTimedOut;
 
         public LonNetwork(Config config)
         {
@@ -50,31 +53,51 @@ namespace LonScan
         /// <param name="response">callback to be called upon a response</param>
         /// <param name="waitTime">time to wait for the response in ms, 0 = wait forever, -1 = do not wait at all</param>
         /// <returns>Returns true when a response arrived in time, false when waiting timed out.</returns>
-        public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = -2)
+        public bool SendMessage(LonPPdu pdu, ResponseCallback response, int waitTime = -2, int maxTries = 0)
         {
-            int maxTries = Config.PacketRetries;
             int trans;
 
-            if(waitTime == -2)
+            if (maxTries <= 0)
+            {
+                maxTries = Config.PacketRetries;
+            }
+            if (waitTime == -2)
             {
                 waitTime = Config.PacketTimeout;
+            }
+
+            /* update source subnet/address if needed */
+            if (pdu.NPDU.Address.SourceSubnet == -1)
+            {
+                pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
+            }
+            if (pdu.NPDU.Address.SourceNode == -1)
+            {
+                pdu.NPDU.Address.SourceNode = Config.SourceNode;
             }
 
             for (int retry = 0; retry < maxTries; retry++)
             {
                 lock (PendingRequests)
                 {
-                    trans = NextTransaction;
-
                     /* delay transmission to prevent flooding */
                     while ((DateTime.Now - LastPacket).TotalMilliseconds < Config.PacketDelay)
                     {
                         Thread.Sleep(5);
                     }
-                    LastPacket = DateTime.Now;
 
-                    NextTransaction++;
-                    NextTransaction %= 8;
+                    do
+                    {
+                        if (PendingRequests.Count > 5)
+                        {
+                            Monitor.Wait(PendingRequests, 10);
+                        }
+
+                        trans = NextTransaction;
+                        NextTransaction++;
+                        NextTransaction %= 8;
+
+                    } while (PendingRequests.ContainsKey(trans));
 
                     if (waitTime > 0)
                     {
@@ -87,28 +110,20 @@ namespace LonScan
                         lonpdu.TransNo = (uint)trans;
                     }
 
-                    /* update source subnet/address if needed */
-                    if (pdu.NPDU.Address.SourceSubnet == -1)
-                    {
-                        pdu.NPDU.Address.SourceSubnet = Config.SourceSubnet;
-                    }
-                    if (pdu.NPDU.Address.SourceNode == -1)
-                    {
-                        pdu.NPDU.Address.SourceNode = Config.SourceNode;
-                    }
-
+                    LastPacket = DateTime.Now;
+                    PacketsSent++;
                     SendSocket.SendTo(pdu.FrameBytes, RemoteEndpoint);
 
-                    DateTime start = DateTime.Now;
-
+                    var sendTime = LastPacket;
                     if (waitTime > 0)
                     {
-                        while ((DateTime.Now - start).TotalMilliseconds < (waitTime / maxTries) || waitTime == 0)
+                        while ((DateTime.Now - sendTime).TotalMilliseconds < (waitTime / maxTries) || waitTime == 0)
                         {
                             Monitor.Wait(PendingRequests, 10);
 
                             if (!PendingRequests.ContainsKey(trans))
                             {
+                                PacketsReceived++;
                                 return true;
                             }
                             if (Stopped)
@@ -116,6 +131,7 @@ namespace LonScan
                                 return false;
                             }
                         }
+                        PacketsTimedOut++;
                         PendingRequests.Remove(trans);
                     }
                 }

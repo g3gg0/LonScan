@@ -244,9 +244,9 @@ namespace LonScan
     public class LonAddressNode : LonAddress
     {
         [PacketFieldUnsigned(8)]
-        public uint DestinationSubnet = 0;
+        public int DestinationSubnet = 0;
         [PacketFieldUnsigned(7)]
-        public uint DestinationNode = 0;
+        public int DestinationNode = 0;
         internal override LonNPduAddressFormat AddressFormat => LonNPduAddressFormat.SubnetNode;
 
         override public byte[] SDU => CombineBits(new BitInfo(SourceSubnet, 8), new BitInfo(1, 1), new BitInfo(SourceNode, 7), new BitInfo(DestinationSubnet, 8), new BitInfo(1, 1), new BitInfo(DestinationNode, 7));
@@ -254,7 +254,7 @@ namespace LonScan
         public static LonAddress FromData(byte[] data, int offset, int length)
         {
             ulong[] addr = ExtractBits(data, offset, new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(1), new BitInfo(7));
-            var (sourceSubnet, bType, sourceNode, destinationSubnet, destinationNode) = ((int)addr[0], (uint)addr[1], (int)addr[2], (uint)addr[3], (uint)addr[5]);
+            var (sourceSubnet, bType, sourceNode, destinationSubnet, destinationNode) = ((int)addr[0], (uint)addr[1], (int)addr[2], (int)addr[3], (int)addr[5]);
 
             if (bType == 0)
             {

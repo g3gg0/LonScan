@@ -63,7 +63,7 @@ namespace LonScan
                                         SourceSubnet = -1,
                                         SourceNode = -1, /* automatically set */
                                         DestinationSubnet = 1,
-                                        DestinationNode = (uint)Address
+                                        DestinationNode = Address
                                     },
                                     DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
                                     Domain = 0x54,
@@ -87,7 +87,7 @@ namespace LonScan
                                         Array.Copy(apdu.Payload, 0, ConfigMem, addr, 0x10);
                                     }
                                 }
-                            });
+                            }, 5000, 5);
                         }
 
                         versionFetched = true;
@@ -114,7 +114,7 @@ namespace LonScan
                                         SourceSubnet = -1,
                                         SourceNode = -1, /* automatically set */
                                         DestinationSubnet = 1,
-                                        DestinationNode = (uint)Address
+                                        DestinationNode = Address
                                     },
                                     DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
                                     Domain = 0x54,
@@ -156,7 +156,7 @@ namespace LonScan
                                     SourceSubnet = -1,
                                     SourceNode = -1, /* automatically set */
                                     DestinationSubnet = 1,
-                                    DestinationNode = (uint)Address
+                                    DestinationNode = Address
                                 },
                                 DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
                                 Domain = 0x54,

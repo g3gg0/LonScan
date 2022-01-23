@@ -53,6 +53,7 @@
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.toolStripLatency = new System.Windows.Forms.ToolStripLabel();
             this.menuStrip.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -185,7 +186,8 @@
             this.toolStripSeparator1,
             this.btnAdd,
             this.btnScan,
-            this.toolStripSeparator2});
+            this.toolStripSeparator2,
+            this.toolStripLatency});
             this.toolStrip.Location = new System.Drawing.Point(0, 24);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Size = new System.Drawing.Size(1223, 25);
@@ -238,6 +240,12 @@
             this.toolStripStatusLabel.Size = new System.Drawing.Size(39, 17);
             this.toolStripStatusLabel.Text = "Status";
             // 
+            // toolStripLatency
+            // 
+            this.toolStripLatency.Name = "toolStripLatency";
+            this.toolStripLatency.Size = new System.Drawing.Size(54, 22);
+            this.toolStripLatency.Text = "Latency: ";
+            // 
             // LonScannerMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -287,6 +295,7 @@
         private System.Windows.Forms.ToolStripMenuItem testFuncToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem packetForgeToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
+        private System.Windows.Forms.ToolStripLabel toolStripLatency;
     }
 }
 
