@@ -35,12 +35,14 @@
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader6a = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader12 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader13 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label3 = new System.Windows.Forms.Label();
@@ -49,8 +51,8 @@
             this.txtFirmwareVer = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.txtFirmwareProd = new System.Windows.Forms.TextBox();
-            this.columnHeader13 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader6a = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.btnDumpFlash = new System.Windows.Forms.Button();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -110,6 +112,10 @@
             this.columnHeader5.Text = "Value";
             this.columnHeader5.Width = 155;
             // 
+            // columnHeader6a
+            // 
+            this.columnHeader6a.Text = "Bound";
+            // 
             // columnHeader6
             // 
             this.columnHeader6.Text = "Prio";
@@ -135,6 +141,10 @@
             // 
             this.columnHeader12.Text = "Secure";
             // 
+            // columnHeader13
+            // 
+            this.columnHeader13.Text = "Addr.";
+            // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -146,6 +156,8 @@
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.progressBar1);
+            this.splitContainer1.Panel1.Controls.Add(this.btnDumpFlash);
             this.splitContainer1.Panel1.Controls.Add(this.groupBox1);
             // 
             // splitContainer1.Panel2
@@ -224,13 +236,23 @@
             this.txtFirmwareProd.TabIndex = 0;
             this.txtFirmwareProd.Text = "Fetching...";
             // 
-            // columnHeader13
+            // btnDumpFlash
             // 
-            this.columnHeader13.Text = "Addr.";
+            this.btnDumpFlash.Location = new System.Drawing.Point(191, 35);
+            this.btnDumpFlash.Name = "btnDumpFlash";
+            this.btnDumpFlash.Size = new System.Drawing.Size(125, 23);
+            this.btnDumpFlash.TabIndex = 1;
+            this.btnDumpFlash.Text = "Dump Memory";
+            this.btnDumpFlash.UseVisualStyleBackColor = true;
+            this.btnDumpFlash.Click += new System.EventHandler(this.btnDumpFlash_Click);
             // 
-            // columnHeader6a
+            // progressBar1
             // 
-            this.columnHeader6a.Text = "Bound";
+            this.progressBar1.Location = new System.Drawing.Point(191, 61);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(124, 16);
+            this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBar1.TabIndex = 2;
             // 
             // DeviceForm
             // 
@@ -275,6 +297,8 @@
         private System.Windows.Forms.ColumnHeader columnHeader12;
         private System.Windows.Forms.ColumnHeader columnHeader13;
         private System.Windows.Forms.ColumnHeader columnHeader6a;
+        private System.Windows.Forms.Button btnDumpFlash;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }
 

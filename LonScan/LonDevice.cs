@@ -40,6 +40,62 @@ namespace LonScan
             OnUpdate += (d) => { };
         }
 
+        public byte[] ReadMemory(uint address, int length, Action<decimal> progress = null)
+        {
+            byte[] result = new byte[0];
+
+            for (uint off = 0; off < length; off += 0x10)
+            {
+                LonPPdu pdu = new LonPPdu
+                {
+                    NPDU = new LonNPdu
+                    {
+                        Address = new LonAddressNode
+                        {
+                            SourceSubnet = -1,
+                            SourceNode = -1, /* automatically set */
+                            DestinationSubnet = 1,
+                            DestinationNode = Address
+                        },
+                        DomainLength = LonNPdu.LonNPduDomainLength.Bits_8,
+                        Domain = 0x54,
+                        PDU = new LonSPdu
+                        {
+                            SPDUType = LonSPdu.LonSPduType.Request,
+                            APDU = LonAPduNetworkManagement.GenerateNMMemoryRead(0, address + off, 0x10)
+                        }
+                    }
+                };
+                bool success = Network.SendMessage(pdu, (p) =>
+                {
+                    LonSPdu spdu = (p.NPDU.PDU as LonSPdu);
+                    if (spdu != null && spdu.APDU is LonAPduGenericApplication)
+                    {
+                        LonAPduGenericApplication apdu = (spdu.APDU as LonAPduGenericApplication);
+
+                        /* mem read successful */
+                        if ((apdu.Code & 0x20) != 0 && (apdu.Code & 0x1F) == (int)LonAPduNetworkManagement.LonAPduNMType.ReadMemory && apdu.Payload.Length > 0)
+                        {
+                            Array.Resize(ref result, (int)(off + apdu.Payload.Length));
+                            Array.Copy(apdu.Payload, 0, result, off, apdu.Payload.Length);
+                        }
+                    }
+                }, 5000, 5);
+
+                if(progress != null)
+                {
+                    progress((decimal)result.Length / length);
+                }
+
+                if(!success)
+                {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
 
         public void StartNvScan()
         {

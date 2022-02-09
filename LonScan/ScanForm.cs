@@ -27,7 +27,7 @@ namespace LonScan
             {
                 foreach (int addr in dev.Addresses)
                 {
-                    if(AddressGuesses.ContainsKey(addr))
+                    if (AddressGuesses.ContainsKey(addr))
                     {
                         AddressGuesses[addr] += ", " + dev.Name;
                     }
@@ -42,8 +42,21 @@ namespace LonScan
             Config = config;
             Network = network;
             Network.OnReceive += DataReceived;
+        }
 
+        private void btnDetect_Click(object sender, EventArgs e)
+        {
             QueryDevices();
+        }
+
+        private void btnResetCounters_Click(object sender, EventArgs e)
+        {
+            lock (Items)
+            {
+                lstDevices.Items.Clear();
+                Items.Clear();
+                Packets.Clear();
+            }
         }
 
         private void QueryDevices()
@@ -211,58 +224,61 @@ namespace LonScan
             {
                 if (pdu.NPDU != null)
                 {
-                    int address = (int)pdu.NPDU.Address.SourceNode;
-                    string possible = "";
+                    lock (Items)
+                    {
+                        int address = (int)pdu.NPDU.Address.SourceNode;
+                        string possible = "";
 
-                    if(address == Config.SourceNode)
-                    {
-                        possible = "(this tool)";
-                    }
-                    else if (AddressGuesses.ContainsKey(address))
-                    {
-                        possible = "Guess: " + AddressGuesses[address];
-                    }
-
-                    if (!Packets.ContainsKey(address))
-                    {
-                        var item = new ListViewItem(new string[] { "" + address, "" + 0, possible, "", "" });
-                        Items.Add(address, item);
-                        Packets.Add(address, 0);
-                        lstDevices.Items.Add(item);
-                    }
-
-                    if (pdu.NPDU.PDU is LonSPdu spdu)
-                    {
-                        if (spdu.APDU is LonAPduGenericApplication apdu)
+                        if (address == Config.SourceNode)
                         {
-                            if (apdu.Code == 0x21)
+                            possible = "(this tool)";
+                        }
+                        else if (AddressGuesses.ContainsKey(address))
+                        {
+                            possible = "Guess: " + AddressGuesses[address];
+                        }
+
+                        if (!Packets.ContainsKey(address))
+                        {
+                            var item = new ListViewItem(new string[] { "" + address, "" + 0, possible, "", "" });
+                            Items.Add(address, item);
+                            Packets.Add(address, 0);
+                            lstDevices.Items.Add(item);
+                        }
+
+                        if (pdu.NPDU.PDU is LonSPdu spdu)
+                        {
+                            if (spdu.APDU is LonAPduGenericApplication apdu)
                             {
-                                byte[] neuron = new byte[6];
-                                byte[] prog_str = new byte[8];
-
-                                Array.Copy(apdu.Data, 0, neuron, 0, neuron.Length);
-                                Array.Copy(apdu.Data, 6, prog_str, 0, prog_str.Length);
-                                Items[address].SubItems[3].Text = BitConverter.ToString(neuron).Replace("-", "");
-                                Items[address].SubItems[4].Text = BitConverter.ToString(prog_str).Replace("-", "");
-
-                                var candid = Config.DeviceConfigs.Where(d => d.ProgramId == Items[address].SubItems[4].Text);
-                                if (candid.Count() > 0)
+                                if (apdu.Code == 0x21)
                                 {
-                                    possible = "";
-                                    foreach (var cand in candid)
+                                    byte[] neuron = new byte[6];
+                                    byte[] prog_str = new byte[8];
+
+                                    Array.Copy(apdu.Data, 0, neuron, 0, neuron.Length);
+                                    Array.Copy(apdu.Data, 6, prog_str, 0, prog_str.Length);
+                                    Items[address].SubItems[3].Text = BitConverter.ToString(neuron).Replace("-", "");
+                                    Items[address].SubItems[4].Text = BitConverter.ToString(prog_str).Replace("-", "");
+
+                                    var candid = Config.DeviceConfigs.Where(d => d.ProgramId == Items[address].SubItems[4].Text);
+                                    if (candid.Count() > 0)
                                     {
-                                        possible += cand.Name + ", ";
+                                        possible = "";
+                                        foreach (var cand in candid)
+                                        {
+                                            possible += cand.Name + ", ";
+                                        }
+                                        Items[address].SubItems[2].Text = "Match: " + possible.Trim(new[] { ' ', ',' });
                                     }
-                                    Items[address].SubItems[2].Text = "Match: " + possible.Trim(new[] { ' ', ',' });
                                 }
                             }
                         }
-                    }
 
-                    Packets[address]++;
-                    Items[address].SubItems[1].Text = "" + Packets[address];
-                    Items.Values.ToList().ForEach(x => x.Selected = false);
-                    Items[address].Selected = true;
+                        Packets[address]++;
+                        Items[address].SubItems[1].Text = "" + Packets[address];
+                        Items.Values.ToList().ForEach(x => x.Selected = false);
+                        Items[address].Selected = true;
+                    }
                 }
             }));
         }
