@@ -253,6 +253,11 @@ namespace LonScan
         {
             int length = 0;
 
+            while(buf[pos] == 0 && pos < buf.Length)
+            {
+                pos++;
+            }
+
             for(int lenChk = pos; lenChk < buf.Length; lenChk++)
             {
                 if(buf[lenChk] == 0)
