@@ -30,6 +30,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyInformationalVersion(
 	ThisAssembly.Git.SemVer.Major + "." +
 	ThisAssembly.Git.SemVer.Minor + "." +
-	ThisAssembly.Git.Commits + "-" +
+	ThisAssembly.Git.SemVer.Patch + "-" +
 	ThisAssembly.Git.Branch + "+" +
 	ThisAssembly.Git.Commit)]
