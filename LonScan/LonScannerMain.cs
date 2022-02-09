@@ -1,8 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -28,6 +30,8 @@ namespace LonScan
         public LonScannerMain()
         {
             InitializeComponent();
+
+            Text = Text + "  " + typeof(LonScannerMain).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
             LoadConfig();
 
