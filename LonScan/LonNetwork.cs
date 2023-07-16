@@ -42,7 +42,7 @@ namespace LonScan
             {
                 Remote = ipAddress;
             }
-            else
+            else if(Config.RemoteAddress != null && Config.RemoteAddress.Length > 0)
             {
                 try
                 {
