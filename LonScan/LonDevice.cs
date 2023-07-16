@@ -193,7 +193,7 @@ namespace LonScan
                                 {
                                     LonAPduGenericApplication apdu = (spdu.APDU as LonAPduGenericApplication);
 
-                                    /* mem read successful */
+                                    /* query nv config successful */
                                     if ((apdu.Code & 0x20) != 0 && (apdu.Code & 0x1F) == (int)LonAPduNetworkManagement.LonAPduNMType.QueryNetworkVariableConfig)
                                     {
                                         LonAPdu.NvConfig cfg = LonAPdu.NvConfig.FromData(apdu.Data);
@@ -253,9 +253,13 @@ namespace LonScan
         {
             int length = 0;
 
-            while(buf[pos] == 0 && pos < buf.Length)
+            while(pos < buf.Length && buf[pos] == 0)
             {
                 pos++;
+            }
+            if(pos == buf.Length && buf[pos] == 0)
+            {
+                return "";
             }
 
             for(int lenChk = pos; lenChk < buf.Length; lenChk++)

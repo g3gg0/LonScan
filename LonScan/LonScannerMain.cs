@@ -35,8 +35,16 @@ namespace LonScan
 
             LoadConfig();
 
-            Network = new LonNetwork(Config);
-            Network.Start();
+            try
+            {
+                Network = new LonNetwork(Config);
+                Network.Start();
+            }
+            catch(Exception ex)
+            { 
+                MessageBox.Show("Failed to bring up network: " + ex.Message);
+                throw ex;
+            }
 
             LatencyThread = new Thread(LatencyThreadMain);
             LatencyThread.Start();

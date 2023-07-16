@@ -744,12 +744,11 @@ namespace LonScan
             public bool Priority;
             public LonAPduDirection Direction;
             public uint NetVarSelector;
-            public bool Bound;
-
+            public bool Bound; /* bound - being in a logical connection */
             public bool Turnaround;
             public uint Service;
-            public bool Secure;
-            public uint Address;
+            public bool Secure; /* 0-3 */
+            public uint Address; /* 15 - no address entry assigned */
 
             public static NvConfig FromData(byte[] data, int offset = 0)
             {
@@ -757,7 +756,7 @@ namespace LonScan
 
                 ulong[] values = ExtractBits(data, offset, new BitInfo(1), new BitInfo(1), new BitInfo(14), new BitInfo(1), new BitInfo(2), new BitInfo(1), new BitInfo(4));
 
-                (config.Priority, config.Direction, config.NetVarSelector, config.Turnaround, config.Service, config.Secure, config.Address) = (values[0]==1, (LonAPduDirection)values[1], (uint)values[2], values[3] == 1, (uint)values[4], values[5] == 1, (uint)values[6]);
+                (config.Priority, config.Direction, config.NetVarSelector, config.Turnaround, config.Service, config.Secure, config.Address) = (values[0] == 1, (LonAPduDirection)values[1], (uint)values[2], values[3] == 1, (uint)values[4], values[5] == 1, (uint)values[6]);
 
                 config.Bound = config.NetVarSelector < 0x1FFF;
                 if (!config.Bound)

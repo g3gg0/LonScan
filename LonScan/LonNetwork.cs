@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace LonScan
 {
@@ -28,15 +31,128 @@ namespace LonScan
         public int PacketsReceived;
         public int PacketsTimedOut;
 
+
         public LonNetwork(Config config)
         {
             Config = config;
-            Remote = IPAddress.Parse(config.RemoteAddress);
-            RemoteEndpoint = new IPEndPoint(Remote, config.RemoteSendPort);
+
+            Remote = null;
+
+            if (IPAddress.TryParse(Config.RemoteAddress, out var ipAddress))
+            {
+                Remote = ipAddress;
+            }
+            else
+            {
+                try
+                {
+                    var hostAddresses = Dns.GetHostAddresses(Config.RemoteAddress);
+                    if (hostAddresses.Length == 0)
+                    {
+                        MessageBox.Show($"Warning: Unable to resolve hostname: {Config.RemoteAddress}", "Resolve error");
+                    }
+                    else
+                    {
+                        Remote = hostAddresses[0];
+                    }
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show($"Warning: Unable to resolve hostname: {Config.RemoteAddress}", "Resolve error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+
+            if (Remote == null)
+            {
+                var allIf = NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(n => n.OperationalStatus == OperationalStatus.Up);
+
+                // Get default gateway
+                var defaultGateway =
+                    allIf.SelectMany(n => n.GetIPProperties()?.GatewayAddresses)
+                    .FirstOrDefault(g => g?.Address != null && g.Address.AddressFamily.ToString() == "InterNetwork");
+
+                if (defaultGateway == null)
+                {
+                    throw new ArgumentException("No default gateway found.");
+                }
+
+                // Find network interface with default gateway
+                var networkInterface = allIf.Where(n => n.GetIPProperties().GatewayAddresses.Contains(defaultGateway))
+                    .FirstOrDefault();
+
+                if (networkInterface == null)
+                {
+                    throw new ArgumentException("No network interface with default gateway found.");
+                }
+
+                // Get IP and subnet mask
+                var ipInfo = networkInterface.GetIPProperties().UnicastAddresses
+                    .Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork)
+                    .FirstOrDefault();
+
+                if (ipInfo == null)
+                {
+                    throw new ArgumentException("No IPv4 address found for network interface.");
+                }
+
+                // Calculate broadcast address
+                byte[] ipAdressBytes = ipInfo.Address.GetAddressBytes();
+                byte[] subnetMaskBytes = ipInfo.IPv4Mask.GetAddressBytes();
+
+                Remote = GetBroadcastAddress(ipInfo.Address, ipInfo.IPv4Mask);
+            }
+
+            if (IsBroadcastAddress(Remote))
+            {
+                MessageBox.Show("Warning: Using broadcast address can lead to high latency or drop rate!" + Environment.NewLine + "Please specify the IP address in LonScan.cfg, field 'RemoteAddress'", "Broadcast Address Warning",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            RemoteEndpoint = new IPEndPoint(Remote, Config.RemoteSendPort);
             SendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            ReceiveClient = new UdpClient(config.RemoteReceivePort);
+            ReceiveClient = new UdpClient(Config.RemoteReceivePort);
 
             OnReceive += (p) => { };
+        }
+
+        private bool IsBroadcastAddress(IPAddress ipAddress)
+        {
+            foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                foreach (var unicastIPAddressInformation in networkInterface.GetIPProperties().UnicastAddresses)
+                {
+                    if (unicastIPAddressInformation.Address.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        var broadcastAddress = GetBroadcastAddress(unicastIPAddressInformation.Address, unicastIPAddressInformation.IPv4Mask);
+                        if (ipAddress.Equals(broadcastAddress))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private IPAddress GetBroadcastAddress(IPAddress ipAddress, IPAddress subnetMask)
+        {
+            byte[] ipAddressBytes = ipAddress.GetAddressBytes();
+            byte[] subnetMaskBytes = subnetMask.GetAddressBytes();
+
+            if (ipAddressBytes.Length != subnetMaskBytes.Length)
+            {
+                throw new ArgumentException("Lengths of IP address and subnet mask do not match.");
+            }
+
+            byte[] broadcastAddressBytes = new byte[ipAddressBytes.Length];
+            for (int i = 0; i < broadcastAddressBytes.Length; i++)
+            {
+                broadcastAddressBytes[i] = (byte)(ipAddressBytes[i] | (subnetMaskBytes[i] ^ 255));
+            }
+
+            return new IPAddress(broadcastAddressBytes);
         }
 
         public void Start()
