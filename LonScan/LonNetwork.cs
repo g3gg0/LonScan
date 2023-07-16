@@ -49,7 +49,7 @@ namespace LonScan
                     var hostAddresses = Dns.GetHostAddresses(Config.RemoteAddress);
                     if (hostAddresses.Length == 0)
                     {
-                        MessageBox.Show($"Warning: Unable to resolve hostname: {Config.RemoteAddress}", "Resolve error");
+                        MessageBox.Show($"Warning: Unable to resolve hostname: {Config.RemoteAddress}. Using broadcast address.", "Resolve error");
                     }
                     else
                     {
