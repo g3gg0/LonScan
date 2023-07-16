@@ -32,7 +32,7 @@ namespace LonScan
                 AnalyzeWithDoctorDump = true,
                 DoctorDumpSettings = new DoctorDumpSettings
                 {
-                    ApplicationID = new Guid("1205bba2-0d38-4351-bba1-8ca63993f8b6\t"),
+                    ApplicationID = new Guid("1205bba2-0d38-4351-bba1-8ca63993f8b6"),
                     OpenReportInBrowser = true
                 }
             };
