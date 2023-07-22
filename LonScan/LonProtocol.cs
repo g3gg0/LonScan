@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Serialization;
+using static LonScan.LonAPdu;
 
 namespace LonScan
 {
@@ -676,13 +677,65 @@ namespace LonScan
         }
     }
 
+    public class LonEbusPdu : LonAPdu
+    {
+        [PacketFieldUnsigned]
+        public uint Counter;
+        [PacketFieldUnsigned]
+        public uint Service;
+        [PacketFieldUnsigned]
+        public uint Command;
+        [PacketFieldUnsigned]
+        public uint MainId;
+        [PacketFieldUnsigned]
+        public uint SubId;
+        [PacketFieldBool]
+        public bool Extended;
+        [PacketFieldUnsigned]
+        public uint Type;
+        [PacketFieldUnsigned]
+        public uint Function;
+        [PacketFieldUnsigned]
+        public uint Entity;
+        [PacketFieldUnsigned]
+        public uint BlockNumber;
+        [PacketFieldUnsigned]
+        int PayloadLength;
+
+        public override byte[] SDU => new byte[0];
+
+        public override byte[] Payload => Data;
+
+        public static LonEbusPdu FromData(byte[] data, int offset, int length)
+        {
+            LonEbusPdu pdu = new LonEbusPdu();
+
+            ulong[] values = ExtractBits(data, offset,
+                new BitInfo(8), new BitInfo(8), new BitInfo(8), new BitInfo(8),
+                new BitInfo(8), new BitInfo(1), new BitInfo(7), new BitInfo(8), new BitInfo(8));
+
+            uint sh;
+            uint sl;
+
+            (pdu.Counter, pdu.Service, pdu.Command, pdu.PayloadLength, pdu.MainId, pdu.Extended, pdu.SubId, sl, sh) =
+                ((uint)values[0], (uint)values[1], (uint)values[2], (int)values[3], (uint)values[4], values[5] == 1, (uint)values[6], (uint)values[7], (uint)values[8]);
+
+            ulong[] sub = ExtractBits(new byte[] { (byte)sh, (byte)sl }, 0,
+                new BitInfo(2), new BitInfo(5), new BitInfo(5), new BitInfo(4));
+
+            (pdu.Type, pdu.Function, pdu.Entity, pdu.BlockNumber) = ((uint)sub[0], (uint)sub[1], (uint)sub[2], (uint)sub[3]);
+
+            pdu.Data = ExtractBytes(data, offset + 8, length - 8);
+
+            return pdu;
+        }
+    }
+
     public class LonAPdu : LonPdu
     {
         [PacketFieldData]
         public byte[] Data = new byte[0];
-
         public override byte[] SDU => new byte[0];
-
         public override byte[] Payload => Data;
 
         public static LonAPdu FromData(byte[] data, int offset, int length)
@@ -702,11 +755,18 @@ namespace LonScan
             else if (ExtractBits(data, offset, new BitInfo(2)) == 0)
             {
                 ulong[] values = ExtractBits(data, offset, new BitInfo(2), new BitInfo(6));
-                pdu = new LonAPduGenericApplication
+                if (values[1] == 0x0e)
                 {
-                    Code = (uint)values[1],
-                    Data = ExtractBytes(data, offset + 1, length - 1)
-                };
+                    pdu = LonEbusPdu.FromData(data, offset + 1, length - 1);
+                }
+                else
+                {
+                    pdu = new LonAPduGenericApplication
+                    {
+                        Code = (uint)values[1],
+                        Data = ExtractBytes(data, offset + 1, length - 1)
+                    };
+                }
             }
             else if (ExtractBits(data, offset, new BitInfo(3)) == 3)
             {
